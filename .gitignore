@@ -1,0 +1,11 @@
+.DS_STORE
+.vscode
+.realize.yaml
+.idea
+
+.env
+.env.*
+!.env.example
+
+docs
+sql
