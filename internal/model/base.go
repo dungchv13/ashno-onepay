@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
 )
@@ -13,6 +14,9 @@ type BaseModel struct {
 
 //nolint:revive
 func (baseModel *BaseModel) BeforeCreate(tx *gorm.DB) (err error) {
+	if baseModel.Id == "" {
+		baseModel.Id = uuid.New().String()
+	}
 	baseModel.CreatedAt = time.Now().UTC()
 	baseModel.UpdatedAt = baseModel.CreatedAt
 	return

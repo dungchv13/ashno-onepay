@@ -3,8 +3,9 @@ package config
 import (
 	"ashno-onepay/internal/model"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
+	errs "github.com/pkg/errors"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -33,7 +34,7 @@ func (d *Database) GetDSN() string {
 func (d *Database) GetConnectionTimeout() time.Duration {
 	duration, err := time.ParseDuration(d.ConnectionTimeout)
 	if err != nil {
-		panic(errors.Wrap(err, "Failed to parse connection timeout"))
+		panic(errs.Wrap(err, "Failed to parse connection timeout"))
 	}
 	return duration
 }
@@ -76,24 +77,50 @@ func InitDatabase() {
 		CreateBatchSize: 100,
 	})
 	if err != nil {
-		panic(errors.Wrap(err, "Failed to connect database"+err.Error()))
+		panic(errs.Wrap(err, "Failed to connect database"+err.Error()))
 	}
 	sqlDB, err := db.DB()
 	sqlDB.SetMaxIdleConns(500)
 	sqlDB.SetMaxOpenConns(2000)
 	sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 	if err != nil {
-		panic(errors.Wrap(err, "Failed to connect database"))
+		panic(errs.Wrap(err, "Failed to connect database"))
 	}
 	err = db.AutoMigrate(
 		model.Registration{},
 		model.RegistrationOption{},
 	)
 	if err != nil {
-		panic(errors.Wrap(err, "Failed to migrate database"))
+		panic(errs.Wrap(err, "Failed to migrate database"))
+	}
+	if err := seedRegistrationOptions(db); err != nil {
+		log.Fatalf("failed to seed registration options: %v", err)
 	}
 
 	DB = db
+}
+
+func seedRegistrationOptions(db *gorm.DB) error {
+	options := []model.RegistrationOption{
+		{Category: "Doctor", Subtype: "EarlyBird", FeeUSD: 500, FeeVND: 12500000, Active: true},
+		{Category: "Doctor", Subtype: "Regular", FeeUSD: 600, FeeVND: 15000000, Active: true},
+		{Category: "Doctor", Subtype: "OnSite", FeeUSD: 700, FeeVND: 17500000, Active: true},
+		{Category: "Student & Trainer", Subtype: "", FeeUSD: 300, FeeVND: 7500000, Active: true},
+		{Category: "Chairman & Speaker", Subtype: "", FeeUSD: 100, FeeVND: 2500000, Active: true},
+	}
+
+	for _, opt := range options {
+		var existing model.RegistrationOption
+		if err := db.
+			Where("category = ? AND subtype = ?", opt.Category, opt.Subtype).
+			First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := db.Create(&opt).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func GetDB() *gorm.DB {
