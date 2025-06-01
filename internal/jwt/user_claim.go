@@ -1,9 +1,7 @@
 package jwt
 
 import (
-	"ashno-onepay/internal/model"
 	"github.com/golang-jwt/jwt"
-	"strconv"
 )
 
 type UserClaims struct {
@@ -18,9 +16,9 @@ const (
 	UserRole  Role = "user"
 )
 
-func NewUserClaims(user model.User, role Role) *UserClaims {
-	return &UserClaims{
-		Role:           role,
-		StandardClaims: jwt.StandardClaims{Id: strconv.Itoa(int(user.Id))},
-	}
-}
+//func NewUserClaims(user model.User, role Role) *UserClaims {
+//	return &UserClaims{
+//		Role:           role,
+//		StandardClaims: jwt.StandardClaims{Id: strconv.Itoa(int(user.Id))},
+//	}
+//}

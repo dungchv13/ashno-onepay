@@ -29,7 +29,7 @@ func NewServer(
 	logger log.Logger,
 	config *config.Config,
 	httpServer *gin.Engine,
-	userController *controller.UserController,
+	registrationController *controller.RegistrationController,
 	sessionMiddleware gin.HandlerFunc,
 ) *Server {
 	httpServer.Use(func(ctx *gin.Context) {
@@ -67,10 +67,9 @@ func NewServer(
 
 	//route
 	{
-		userAPI := httpServer.Group("/user")
+		registerAPI := httpServer.Group("/")
 		{
-			userAPI.POST("/login", userController.HandleLogin)
-			userAPI.POST("/register", userController.HandleRegister)
+			registerAPI.POST("/register", registrationController.HandleRegister)
 		}
 	}
 

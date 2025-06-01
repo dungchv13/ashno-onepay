@@ -86,7 +86,8 @@ func InitDatabase() {
 		panic(errors.Wrap(err, "Failed to connect database"))
 	}
 	err = db.AutoMigrate(
-		model.User{},
+		model.Registration{},
+		model.RegistrationOption{},
 	)
 	if err != nil {
 		panic(errors.Wrap(err, "Failed to migrate database"))

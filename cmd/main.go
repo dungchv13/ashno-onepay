@@ -33,18 +33,18 @@ func main() {
 	http := server.NewHTTPServer(logger)
 
 	//repo
-	userRepo := repository.GetUserRepositoryInstance(config.GetDB())
+	registrationRepo := repository.GetRegistrationRepositoryInstance(config.GetDB())
+	registrationOptionsRepo := repository.GetRegistrationOptionRepositoryInstance(config.GetDB())
 	//service
-	userSvc := service.GetUserServiceInstance(userRepo)
+	registrationSvc := service.GetRegistrationServiceInstance(registrationRepo, registrationOptionsRepo, &cfg)
 	//controller
-	jwtIssuer := jwt.NewIssuer(cfg.Server.JwtKey)
-	userCtrl := controller.NewUserController(jwtIssuer, userSvc)
+	registrationCtrl := controller.NewRegistrationController(registrationSvc)
 
 	sessionMiddleware := middleware.NewSessionMiddleware(jwt.NewValidator(cfg.Server.JwtKey))
 
 	sv := server.NewServer(
 		logger, &cfg, http,
-		userCtrl,
+		registrationCtrl,
 		sessionMiddleware)
 	sv.Run()
 

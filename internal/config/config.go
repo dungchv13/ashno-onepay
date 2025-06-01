@@ -10,6 +10,7 @@ type Config struct {
 	Server   Server   `envPrefix:"SERVER_"`
 	Log      Log      `envPrefix:"LOG_"`
 	Swagger  Swagger  `envPrefix:"SWAGGER_"`
+	OnePay   OnePay   `envPrefix:"ONE_PAY_"`
 }
 
 var config Config
