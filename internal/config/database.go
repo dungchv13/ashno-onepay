@@ -102,18 +102,23 @@ func InitDatabase() {
 
 func seedRegistrationOptions(db *gorm.DB) error {
 	options := []model.RegistrationOption{
-		{Category: "Doctor", Subtype: "EarlyBird", FeeUSD: 500, FeeVND: 12500000, Active: true},
-		{Category: "Doctor", Subtype: "Regular", FeeUSD: 600, FeeVND: 15000000, Active: true},
-		{Category: "Doctor", Subtype: "OnSite", FeeUSD: 700, FeeVND: 17500000, Active: true},
-		{Category: "Student & Trainer", Subtype: "", FeeUSD: 300, FeeVND: 7500000, Active: true},
-		{Category: "Chairman & Speaker", Subtype: "", FeeUSD: 100, FeeVND: 2500000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.EarlyBird), FeeUSD: 500, FeeVND: 12500000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.Regular), FeeUSD: 600, FeeVND: 15000000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.OnSite), FeeUSD: 700, FeeVND: 17500000, Active: true},
+		{Category: string(model.StudentCategory), Subtype: "", FeeUSD: 300, FeeVND: 7500000, Active: true},
+		{Category: string(model.DinnerCategory), Subtype: "", FeeUSD: 100, FeeVND: 2500000, Active: true},
 	}
 
 	for _, opt := range options {
 		var existing model.RegistrationOption
-		if err := db.
-			Where("category = ? AND subtype = ?", opt.Category, opt.Subtype).
-			First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		query := db.Model(&model.RegistrationOption{})
+		if opt.Category != "" {
+			query = query.Where("category = ?", opt.Category)
+		}
+		if opt.Subtype != "" {
+			query = query.Where("subtype = ?", opt.Subtype)
+		}
+		if err := query.First(&existing).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 			if err := db.Create(&opt).Error; err != nil {
 				return err
 			}

@@ -11,6 +11,7 @@ import (
 type RegistrationRepository interface {
 	Create(registration model.Registration) (*model.Registration, error)
 	GetByEmail(email string) (*model.Registration, error)
+	GetRegistration(ID string) (*model.Registration, error)
 }
 
 type registrationRepository struct {
@@ -24,6 +25,20 @@ func (r registrationRepository) GetByEmail(email string) (*model.Registration, e
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
+		} else {
+			return nil, errs.ErrInternal.Wrap(result.Error)
+		}
+	}
+	return &registration, nil
+}
+
+func (r registrationRepository) GetRegistration(ID string) (*model.Registration, error) {
+	var registration model.Registration
+
+	result := r.db.Where("id = ?", ID).First(&registration)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrNotFound.Reform("user not found")
 		} else {
 			return nil, errs.ErrInternal.Wrap(result.Error)
 		}

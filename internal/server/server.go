@@ -67,9 +67,12 @@ func NewServer(
 
 	//route
 	{
-		registerAPI := httpServer.Group("/")
+		route := httpServer.Group("/")
 		{
-			registerAPI.POST("/register", registrationController.HandleRegister)
+			route.POST("/register", registrationController.HandleRegister)
+			route.GET("/user/:userID/registration-info", registrationController.GetRegistrationInfo)
+			route.GET("/onepay/ipn", registrationController.OnePayIPN)
+
 		}
 	}
 

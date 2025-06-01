@@ -14,12 +14,17 @@ import (
 
 type RegistrationService interface {
 	Register(registration model.Registration, clientIP string) (string, string, error)
+	GetRegistration(ID string) (*model.Registration, error)
 }
 
 type registrationService struct {
 	registrationRepo        repository.RegistrationRepository
 	registrationOptionsRepo repository.RegistrationOptionRepository
 	config                  *config.Config
+}
+
+func (r registrationService) GetRegistration(ID string) (*model.Registration, error) {
+	return r.registrationRepo.GetRegistration(ID)
 }
 
 func (r registrationService) Register(registration model.Registration, clientIP string) (string, string, error) {
@@ -63,6 +68,7 @@ func (r registrationService) setupRegistration(reg *model.Registration) error {
 	default:
 		return errs.ErrNotFound.Reform("option not found")
 	}
+	fmt.Println(OptionFilter)
 	option, err := r.registrationOptionsRepo.Find(OptionFilter)
 	if err != nil {
 		return errs.ErrNotFound.Reform("option not found")
