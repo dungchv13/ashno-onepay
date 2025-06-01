@@ -6,6 +6,7 @@ import (
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
@@ -42,19 +43,19 @@ func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
 	})
 }
 
-// @Summary Register
-// @Id register
+// @Summary Get Registration Info
+// @Id getRegistrationInfo
 // @Tags register
 // @version 1.0
-// @Param userID path string true "userID"
+// @Param registerID path string true "registerID"
 // @Success 200 {object} model.Registration
 // @Failure 400 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
-// @Router /user/{userID}/registration-info [get]
-func (u *RegistrationController) GetRegistrationInfo(ctx *gin.Context) {
-	userID := ctx.Param("userID")
+// @Router /register/{registerID}/registration-info [get]
+func (u *RegistrationController) HandlerGetRegistrationInfo(ctx *gin.Context) {
+	registerID := ctx.Param("registerID")
 
-	reg, err := u.registrationSvc.GetRegistration(userID)
+	reg, err := u.registrationSvc.GetRegistration(registerID)
 	if err != nil {
 		handleError(ctx, errors.ErrInternal.Wrap(err))
 		return
@@ -63,16 +64,64 @@ func (u *RegistrationController) GetRegistrationInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, reg)
 }
 
-func (u *RegistrationController) OnePayIPN(ctx *gin.Context) {
-	userID := ctx.Param("userID")
+// @Summary OnePayIPN
+// @Id onePayIPN
+// @Tags register
+// @version 1.0
+// @Success 200 {object} model.Registration
+// @Failure 400 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Router /register/{registerID}/registration-info [get]
+func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
+	queryParams := ctx.Request.URL.Query()
 
-	reg, err := u.registrationSvc.GetRegistration(userID)
-	if err != nil {
-		handleError(ctx, errors.ErrInternal.Wrap(err))
+	// Extract SecureHash
+	receivedHash := queryParams.Get("vpc_SecureHash")
+	if receivedHash == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing vpc_SecureHash"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, reg)
+	// Remove vpc_SecureHash from map for HMAC calculation
+	deleteQuery := ctx.Request.URL.Query()
+	deleteQuery.Del("vpc_SecureHash")
+
+	// Convert to map[string]string
+	paramMap := make(map[string]string)
+	for key := range deleteQuery {
+		paramMap[key] = deleteQuery.Get(key)
+	}
+
+	// Validate HMAC
+	if !u.registrationSvc.ValidateHMAC(paramMap, receivedHash) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Invalid signature"})
+		return
+	}
+
+	// Transaction result handling
+	txnRef := paramMap["vpc_MerchTxnRef"] // registrationID
+	txnCode := paramMap["vpc_TxnResponseCode"]
+	message := paramMap["vpc_Message"]
+
+	if txnCode == "0" {
+		// Payment Success
+		log.Println("Payment Success for ", txnRef)
+		err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusDone))
+		if err != nil {
+			handleError(ctx, errors.ErrInternal.Wrap(err))
+			return
+		}
+		ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
+	} else {
+		// Payment Failed
+		log.Printf("Payment Failed for %s: %s", txnRef, message)
+		err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusFail))
+		if err != nil {
+			handleError(ctx, errors.ErrInternal.Wrap(err))
+			return
+		}
+		ctx.String(http.StatusOK, "payment_failed")
+	}
 }
 
 func NewRegistrationController(registrationSvc service.RegistrationService) *RegistrationController {

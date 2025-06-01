@@ -3,8 +3,8 @@ package model
 type Registration struct {
 	BaseModel
 
-	RegistrationOptionID string             `json:"-"`
-	RegistrationOption   RegistrationOption `gorm:"foreignKey:RegistrationOptionID" json:"-"`
+	RegistrationOptionID string             `json:"registration_option_id"`
+	RegistrationOption   RegistrationOption `gorm:"foreignKey:RegistrationOptionID"`
 
 	RegistrationCategory string `gorm:"type:varchar(100)" json:"registration_category" binding:"required"`
 	Nationality          string `gorm:"type:varchar(100)" json:"nationality"`
@@ -26,6 +26,7 @@ type RegistrationCategory string
 
 const (
 	PaymentStatusPending PaymentStatus        = "pending"
+	PaymentStatusFail    PaymentStatus        = "fail"
 	PaymentStatusDone    PaymentStatus        = "done"
 	NationalityVietNam                        = "vn"
 	DoctorCategory       RegistrationCategory = "ENT Doctors"

@@ -5,9 +5,14 @@ import (
 	errs "ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/repository"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
 	"net/url"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -15,12 +20,51 @@ import (
 type RegistrationService interface {
 	Register(registration model.Registration, clientIP string) (string, string, error)
 	GetRegistration(ID string) (*model.Registration, error)
+	ValidateHMAC(params map[string]string, receivedHash string) bool
+	UpdatePaymentStatus(ID, status string) error
 }
 
 type registrationService struct {
 	registrationRepo        repository.RegistrationRepository
 	registrationOptionsRepo repository.RegistrationOptionRepository
 	config                  *config.Config
+}
+
+func (r registrationService) UpdatePaymentStatus(ID, status string) error {
+	//reg, err := r.GetRegistration(ID)
+	//if err != nil {
+	//	return err
+	//}
+	//if status == string(model.PaymentStatusDone) {
+	//	go SendPaymentSuccessEmailWithQR(reg.Email, reg.FirstName, reg.Id, )
+	//}
+	return r.registrationRepo.UpdatePaymentStatus(ID, status)
+}
+
+func (r registrationService) ValidateHMAC(params map[string]string, receivedHash string) bool {
+	// Sort keys
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		if strings.HasPrefix(k, "vpc_") || strings.HasPrefix(k, "user_") {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+
+	var rawData []string
+	for _, k := range keys {
+		v := params[k]
+		if v != "" {
+			rawData = append(rawData, k+"="+v)
+		}
+	}
+	dataToHash := strings.Join(rawData, "&")
+
+	hmacHash := hmac.New(sha256.New, []byte(r.config.OnePay.HashCode))
+	hmacHash.Write([]byte(dataToHash))
+	calculatedHash := strings.ToUpper(hex.EncodeToString(hmacHash.Sum(nil)))
+
+	return calculatedHash == receivedHash
 }
 
 func (r registrationService) GetRegistration(ID string) (*model.Registration, error) {

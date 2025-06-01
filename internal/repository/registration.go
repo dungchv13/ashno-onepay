@@ -12,10 +12,18 @@ type RegistrationRepository interface {
 	Create(registration model.Registration) (*model.Registration, error)
 	GetByEmail(email string) (*model.Registration, error)
 	GetRegistration(ID string) (*model.Registration, error)
+	UpdatePaymentStatus(ID, status string) error
 }
 
 type registrationRepository struct {
 	db *gorm.DB
+}
+
+func (r registrationRepository) UpdatePaymentStatus(ID, status string) error {
+	err := r.db.Model(&model.Registration{}).
+		Where("id = ?", ID).
+		Update("payment_status", status).Error
+	return err
 }
 
 func (r registrationRepository) GetByEmail(email string) (*model.Registration, error) {
