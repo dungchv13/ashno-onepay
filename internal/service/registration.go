@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/url"
 	"sort"
 	"strings"
@@ -31,13 +32,18 @@ type registrationService struct {
 }
 
 func (r registrationService) UpdatePaymentStatus(ID, status string) error {
-	//reg, err := r.GetRegistration(ID)
-	//if err != nil {
-	//	return err
-	//}
-	//if status == string(model.PaymentStatusDone) {
-	//	go SendPaymentSuccessEmailWithQR(reg.Email, reg.FirstName, reg.Id, )
-	//}
+	reg, err := r.GetRegistration(ID)
+	if err != nil {
+		return err
+	}
+	if status == string(model.PaymentStatusDone) {
+		go func() {
+			err := SendPaymentSuccessEmailWithQR(reg.Email, reg.FirstName, reg.Id, "http://localhost:8888/")
+			if err != nil {
+				log.Printf("Send QR Failed for %s", reg.Id)
+			}
+		}()
+	}
 	return r.registrationRepo.UpdatePaymentStatus(ID, status)
 }
 

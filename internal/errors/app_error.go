@@ -99,7 +99,7 @@ func (e AppError) WrapString(err string) AppError {
 func (e AppError) AppendTraceID(traceID string) AppError {
 	if len(traceID) > 0 {
 		e.TraceID = traceID
-		e.Message = fmt.Sprintf("%s ( trace_id = %s )", e.Message, traceID)
+		e.Message = fmt.Sprintf("%s", e.Message)
 	}
 	return e
 }

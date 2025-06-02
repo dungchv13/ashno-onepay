@@ -68,10 +68,10 @@ func (u *RegistrationController) HandlerGetRegistrationInfo(ctx *gin.Context) {
 // @Id onePayIPN
 // @Tags register
 // @version 1.0
-// @Success 200 {object} model.Registration
+// @Success 200 {string} string "responsecode=1&desc=confirm-success"
 // @Failure 400 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
-// @Router /register/{registerID}/registration-info [get]
+// @Router /onepay/ipn [get]
 func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 	queryParams := ctx.Request.URL.Query()
 
@@ -122,6 +122,19 @@ func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 		}
 		ctx.String(http.StatusOK, "payment_failed")
 	}
+}
+
+func (u *RegistrationController) Test(ctx *gin.Context) {
+	txnRef := ctx.Query("vpc_MerchTxnRef") // registrationID
+
+	// Payment Success
+	log.Println("Payment Success for ", txnRef)
+	err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusDone))
+	if err != nil {
+		handleError(ctx, errors.ErrInternal.Wrap(err))
+		return
+	}
+	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
 }
 
 func NewRegistrationController(registrationSvc service.RegistrationService) *RegistrationController {

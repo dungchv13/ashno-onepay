@@ -96,6 +96,7 @@ func sendHttpGetRequestWithHeader(requestUrl string, headerRequest map[string]st
 func generateSecureHash(stringToHash string, merchantHashCode string) string {
 	keyHashHex, err := hex.DecodeString(merchantHashCode)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	secureHash := hmac.New(sha256.New, keyHashHex)
@@ -107,6 +108,7 @@ func generateSecureHash(stringToHash string, merchantHashCode string) string {
 
 func generateStringToHash(paramMapSorted []MapSort) string {
 	stringToHash := ""
+	fmt.Println(paramMapSorted)
 	for _, items := range paramMapSorted {
 		key := items.Key
 		value := items.Value
