@@ -8,10 +8,16 @@ import (
 
 type RegistrationOptionRepository interface {
 	Find(req model.RegistrationOptionFilter) (*model.RegistrationOption, error)
+	ListOption() ([]model.RegistrationOption, error)
 }
 
 type registrationOptionRepository struct {
 	db *gorm.DB
+}
+
+func (registrationOptionRepository) ListOption() ([]model.RegistrationOption, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (r registrationOptionRepository) Find(req model.RegistrationOptionFilter) (*model.RegistrationOption, error) {

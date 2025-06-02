@@ -13,10 +13,15 @@ type RegistrationRepository interface {
 	GetByEmail(email string) (*model.Registration, error)
 	GetRegistration(ID string) (*model.Registration, error)
 	UpdatePaymentStatus(ID, status string) error
+	Remove(ID string) error
 }
 
 type registrationRepository struct {
 	db *gorm.DB
+}
+
+func (r registrationRepository) Remove(ID string) error {
+	return r.db.Delete(&model.Registration{}, ID).Error
 }
 
 func (r registrationRepository) UpdatePaymentStatus(ID, status string) error {
@@ -43,10 +48,10 @@ func (r registrationRepository) GetByEmail(email string) (*model.Registration, e
 func (r registrationRepository) GetRegistration(ID string) (*model.Registration, error) {
 	var registration model.Registration
 
-	result := r.db.Where("id = ?", ID).First(&registration)
+	result := r.db.Preload("RegistrationOption").Where("id = ?", ID).First(&registration)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errs.ErrNotFound.Reform("user not found")
+			return nil, errs.ErrNotFound.Reform("registration not found")
 		} else {
 			return nil, errs.ErrInternal.Wrap(result.Error)
 		}

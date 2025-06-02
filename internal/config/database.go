@@ -102,11 +102,14 @@ func InitDatabase() {
 
 func seedRegistrationOptions(db *gorm.DB) error {
 	options := []model.RegistrationOption{
-		{Category: string(model.DoctorCategory), Subtype: string(model.EarlyBird), FeeUSD: 500, FeeVND: 12500000, Active: true},
-		{Category: string(model.DoctorCategory), Subtype: string(model.Regular), FeeUSD: 600, FeeVND: 15000000, Active: true},
-		{Category: string(model.DoctorCategory), Subtype: string(model.OnSite), FeeUSD: 700, FeeVND: 17500000, Active: true},
-		{Category: string(model.StudentCategory), Subtype: "", FeeUSD: 300, FeeVND: 7500000, Active: true},
-		{Category: string(model.DinnerCategory), Subtype: "", FeeUSD: 100, FeeVND: 2500000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.EarlyBird), FeeUSD: 500, FeeVND: 1800000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.Regular), FeeUSD: 600, FeeVND: 2200000, Active: true},
+		{Category: string(model.DoctorCategory), Subtype: string(model.OnSite), FeeUSD: 700, FeeVND: 3000000, Active: true},
+		{Category: string(model.StudentCategory), Subtype: "", FeeUSD: 300, FeeVND: 1500000, Active: true},
+		{Category: string(model.DoctorAndDinnerCategory), Subtype: string(model.EarlyBird), FeeUSD: 600, FeeVND: 2800000, Active: true},
+		{Category: string(model.DoctorAndDinnerCategory), Subtype: string(model.Regular), FeeUSD: 700, FeeVND: 3200000, Active: true},
+		{Category: string(model.DoctorAndDinnerCategory), Subtype: string(model.OnSite), FeeUSD: 800, FeeVND: 4000000, Active: true},
+		{Category: string(model.StudentAndDinnerCategory), Subtype: "", FeeUSD: 400, FeeVND: 2500000, Active: true},
 	}
 
 	for _, opt := range options {

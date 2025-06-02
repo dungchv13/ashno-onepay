@@ -5,8 +5,8 @@ type RegistrationOption struct {
 	Category string `gorm:"type:varchar(100)" json:"category"`             // e.g., "Doctor"
 	Subtype  string `gorm:"type:varchar(100);default:null" json:"subtype"` // e.g., "Early-bird"
 
-	FeeUSD int `gorm:"not null" json:"fee_usd"` // e.g., 500 = $500
-	FeeVND int `gorm:"not null" json:"fee_vnd"` // e.g., 12000000 = 12,000,000 VND
+	FeeUSD float64 `gorm:"not null" json:"fee_usd"` // e.g., 500 = $500
+	FeeVND int64   `gorm:"not null" json:"fee_vnd"` // e.g., 12000000 = 12,000,000 VND
 
 	Active bool `gorm:"default:true" json:"active"`
 }

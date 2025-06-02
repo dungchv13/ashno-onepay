@@ -6,11 +6,13 @@ import (
 )
 
 type Config struct {
-	Database Database `envPrefix:"DATABASE_"`
-	Server   Server   `envPrefix:"SERVER_"`
-	Log      Log      `envPrefix:"LOG_"`
-	Swagger  Swagger  `envPrefix:"SWAGGER_"`
-	OnePay   OnePay   `envPrefix:"ONE_PAY_"`
+	Database  Database `envPrefix:"DATABASE_"`
+	Server    Server   `envPrefix:"SERVER_"`
+	Log       Log      `envPrefix:"LOG_"`
+	Swagger   Swagger  `envPrefix:"SWAGGER_"`
+	OnePayVND OnePay   `envPrefix:"ONE_PAY_VND_"`
+	OnePayUSD OnePay   `envPrefix:"ONE_PAY_USD_"`
+	SendGrip  SendGrip `envPrefix:"SEND_GRIP_"`
 }
 
 var config Config

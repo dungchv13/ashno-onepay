@@ -18,13 +18,13 @@ type RegistrationController struct {
 // @Id register
 // @Tags register
 // @version 1.0
-// @Param body body model.Registration true "body"
+// @Param body body dto.RegistrationRequest true "body"
 // @Success 200 {object} dto.RegistrationResponse
 // @Failure 400 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
 // @Router /register [post]
 func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
-	var req model.Registration
+	var req dto.RegistrationRequest
 	if err := ctx.BindJSON(&req); err != nil {
 		handleError(ctx, errors.ErrBadRequest.Wrap(err).Reform("json marshal failed"))
 		return
@@ -73,55 +73,12 @@ func (u *RegistrationController) HandlerGetRegistrationInfo(ctx *gin.Context) {
 // @Failure 500 {object} errors.AppError
 // @Router /onepay/ipn [get]
 func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
-	queryParams := ctx.Request.URL.Query()
-
-	// Extract SecureHash
-	receivedHash := queryParams.Get("vpc_SecureHash")
-	if receivedHash == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing vpc_SecureHash"})
+	err := u.registrationSvc.OnePayVerifySecureHash(ctx.Request.URL)
+	if err != nil {
+		handleError(ctx, err)
 		return
 	}
-
-	// Remove vpc_SecureHash from map for HMAC calculation
-	deleteQuery := ctx.Request.URL.Query()
-	deleteQuery.Del("vpc_SecureHash")
-
-	// Convert to map[string]string
-	paramMap := make(map[string]string)
-	for key := range deleteQuery {
-		paramMap[key] = deleteQuery.Get(key)
-	}
-
-	// Validate HMAC
-	if !u.registrationSvc.ValidateHMAC(paramMap, receivedHash) {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Invalid signature"})
-		return
-	}
-
-	// Transaction result handling
-	txnRef := paramMap["vpc_MerchTxnRef"] // registrationID
-	txnCode := paramMap["vpc_TxnResponseCode"]
-	message := paramMap["vpc_Message"]
-
-	if txnCode == "0" {
-		// Payment Success
-		log.Println("Payment Success for ", txnRef)
-		err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusDone))
-		if err != nil {
-			handleError(ctx, errors.ErrInternal.Wrap(err))
-			return
-		}
-		ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
-	} else {
-		// Payment Failed
-		log.Printf("Payment Failed for %s: %s", txnRef, message)
-		err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusFail))
-		if err != nil {
-			handleError(ctx, errors.ErrInternal.Wrap(err))
-			return
-		}
-		ctx.String(http.StatusOK, "payment_failed")
-	}
+	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
 }
 
 func (u *RegistrationController) Test(ctx *gin.Context) {

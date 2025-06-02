@@ -2,33 +2,83 @@ package service
 
 import (
 	"ashno-onepay/internal/config"
+	"ashno-onepay/internal/controller/dto"
 	errs "ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/repository"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
 	"log"
 	"net/url"
-	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 type RegistrationService interface {
-	Register(registration model.Registration, clientIP string) (string, string, error)
+	Register(registration dto.RegistrationRequest, clientIP string) (string, string, error)
 	GetRegistration(ID string) (*model.Registration, error)
-	ValidateHMAC(params map[string]string, receivedHash string) bool
 	UpdatePaymentStatus(ID, status string) error
+	OnePayVerifySecureHash(u *url.URL) error
 }
 
 type registrationService struct {
 	registrationRepo        repository.RegistrationRepository
 	registrationOptionsRepo repository.RegistrationOptionRepository
 	config                  *config.Config
+}
+
+func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
+	queryParams := u.Query()
+	queryParamsMap := make(map[string]string)
+	for k, v := range queryParams {
+		queryParamsMap[k] = strings.Join(v, "")
+	}
+	// Transaction result handling
+	regID := queryParamsMap["vpc_MerchTxnRef"]
+	if regID == "" {
+		return errs.ErrBadRequest
+	}
+	reg, err := r.registrationRepo.GetRegistration(regID)
+	if err != nil {
+		return err
+	}
+	op := r.config.OnePayUSD
+	if reg.Nationality == model.NationalityVietNam {
+		op = r.config.OnePayVND
+	}
+	queryMapSorted := sortParams(queryParamsMap)
+	stringToHash := generateStringToHash(queryMapSorted)
+	onePaySecureHash := generateSecureHash(stringToHash, op.HashCode)
+	merchantSecureHash := queryParamsMap["vpc_SecureHash"]
+	fmt.Println("OnePay's Hash: ", onePaySecureHash)
+	fmt.Println("Merchant's Hash: ", merchantSecureHash)
+	if onePaySecureHash != merchantSecureHash {
+		return errs.ErrForbidden.Reform("Invalid signature")
+	}
+	txnCode := queryParamsMap["vpc_TxnResponseCode"]
+	message := queryParamsMap["vpc_Message"]
+	var status string
+	if txnCode == "0" {
+		log.Println("Payment Success for ", regID)
+		status = string(model.PaymentStatusDone)
+		go func() {
+			err := SendPaymentSuccessEmailWithQR(
+				reg.Email, reg.FirstName, reg.Id,
+				r.config.Server.Host+":"+r.config.Server.Port,
+				r.config.SendGrip.ApiKey,
+			)
+			if err != nil {
+				log.Printf("Send QR Failed for %s", reg.Id)
+			}
+		}()
+	} else {
+		log.Printf("Payment Failed for %s: %s", regID, message)
+		status = string(model.PaymentStatusFail)
+	}
+
+	return r.registrationRepo.UpdatePaymentStatus(regID, status)
 }
 
 func (r registrationService) UpdatePaymentStatus(ID, status string) error {
@@ -38,7 +88,11 @@ func (r registrationService) UpdatePaymentStatus(ID, status string) error {
 	}
 	if status == string(model.PaymentStatusDone) {
 		go func() {
-			err := SendPaymentSuccessEmailWithQR(reg.Email, reg.FirstName, reg.Id, "http://localhost:8888/")
+			err := SendPaymentSuccessEmailWithQR(
+				reg.Email, reg.FirstName, reg.Id,
+				r.config.Server.Host+":"+r.config.Server.Port,
+				r.config.SendGrip.ApiKey,
+			)
 			if err != nil {
 				log.Printf("Send QR Failed for %s", reg.Id)
 			}
@@ -47,86 +101,81 @@ func (r registrationService) UpdatePaymentStatus(ID, status string) error {
 	return r.registrationRepo.UpdatePaymentStatus(ID, status)
 }
 
-func (r registrationService) ValidateHMAC(params map[string]string, receivedHash string) bool {
-	// Sort keys
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		if strings.HasPrefix(k, "vpc_") || strings.HasPrefix(k, "user_") {
-			keys = append(keys, k)
-		}
-	}
-	sort.Strings(keys)
-
-	var rawData []string
-	for _, k := range keys {
-		v := params[k]
-		if v != "" {
-			rawData = append(rawData, k+"="+v)
-		}
-	}
-	dataToHash := strings.Join(rawData, "&")
-
-	hmacHash := hmac.New(sha256.New, []byte(r.config.OnePay.HashCode))
-	hmacHash.Write([]byte(dataToHash))
-	calculatedHash := strings.ToUpper(hex.EncodeToString(hmacHash.Sum(nil)))
-
-	return calculatedHash == receivedHash
-}
-
 func (r registrationService) GetRegistration(ID string) (*model.Registration, error) {
 	return r.registrationRepo.GetRegistration(ID)
 }
 
-func (r registrationService) Register(registration model.Registration, clientIP string) (string, string, error) {
+func (r registrationService) Register(request dto.RegistrationRequest, clientIP string) (string, string, error) {
 	// check email registered
-	oldReg, err := r.registrationRepo.GetByEmail(registration.Email)
+	oldReg, err := r.registrationRepo.GetByEmail(request.Email)
 	if err != nil {
 		return "", "", err
 	}
-	if oldReg != nil && oldReg.PaymentStatus == string(model.PaymentStatusDone) {
-		return "", "", errs.ErrInternal.Reform("email registered")
+	if oldReg != nil {
+		if oldReg.PaymentStatus == string(model.PaymentStatusDone) {
+			return "", "", errs.ErrInternal.Reform("email registered")
+		}
+		err = r.registrationRepo.Remove(oldReg.Id)
 	}
+
 	// setup registration
-	err = r.setupRegistration(&registration)
+	reg, err := r.setupRegistration(request)
 	if err != nil {
 		return "", "", err
 	}
 	// generate paymentURL
-	paymentURL, err := r.generatePaymentURL(&registration, clientIP)
+	paymentURL, err := r.generatePaymentURL(&reg, clientIP)
 	if err != nil {
 		return "", "", err
 	}
-	// insert registration
-	_, err = r.registrationRepo.Create(registration)
+	// remove old request + insert registration
+	_, err = r.registrationRepo.Create(reg)
 	if err != nil {
 		return "", "", err
 	}
-	return paymentURL, registration.Id, nil
+	return paymentURL, reg.Id, nil
 }
 
-func (r registrationService) setupRegistration(reg *model.Registration) error {
+func (r registrationService) setupRegistration(request dto.RegistrationRequest) (model.Registration, error) {
+	reg := model.Registration{
+		RegistrationCategory: request.RegistrationCategory,
+		Nationality:          request.Nationality,
+		DoctorateDegree:      request.DoctorateDegree,
+		FirstName:            request.FirstName,
+		MiddleName:           request.MiddleName,
+		LastName:             request.LastName,
+		DateOfBirth:          request.DateOfBirth,
+		Institution:          request.Institution,
+		Email:                request.Email,
+		PhoneNumber:          request.PhoneNumber,
+		Sponsor:              request.Sponsor,
+	}
 	reg.Id = uuid.New().String()
 	OptionFilter := model.RegistrationOptionFilter{}
-	switch reg.RegistrationCategory {
+	switch request.RegistrationCategory {
 	case string(model.DoctorCategory):
 		OptionFilter.Category = string(model.DoctorCategory)
+		if request.AttendGalaDinner {
+			OptionFilter.Category = string(model.DoctorAndDinnerCategory)
+		}
 		OptionFilter.Subtype = DetermineRegistrationPeriod(time.Now())
 	case string(model.StudentCategory):
 		OptionFilter.Category = string(model.StudentCategory)
-	case string(model.DinnerCategory):
-		OptionFilter.Category = string(model.DinnerCategory)
+		if request.AttendGalaDinner {
+			OptionFilter.Category = string(model.StudentAndDinnerCategory)
+		}
 	default:
-		return errs.ErrNotFound.Reform("option not found")
+		return model.Registration{}, errs.ErrNotFound.Reform("option not found")
 	}
-	fmt.Println(OptionFilter)
+
 	option, err := r.registrationOptionsRepo.Find(OptionFilter)
 	if err != nil {
-		return errs.ErrNotFound.Reform("option not found")
+		return model.Registration{}, errs.ErrNotFound.Reform("option not found")
 	}
 	reg.RegistrationOptionID = option.Id
 	reg.RegistrationOption = *option
 
-	return nil
+	return reg, nil
 }
 
 func DetermineRegistrationPeriod(now time.Time) string {
@@ -147,14 +196,15 @@ func DetermineRegistrationPeriod(now time.Time) string {
 }
 
 func (r registrationService) generatePaymentURL(reg *model.Registration, clientIP string) (string, error) {
-	op := r.config.OnePay
+	op := r.config.OnePayUSD
 	locale := "en"
 	currency := "USD"
-	amount := reg.RegistrationOption.FeeUSD
+	amount := strconv.FormatFloat(reg.RegistrationOption.FeeUSD*100, 'f', 2, 64)
 	if reg.Nationality == model.NationalityVietNam {
 		locale = "vn"
 		currency = "VND"
-		amount = reg.RegistrationOption.FeeVND
+		amount = strconv.FormatInt(reg.RegistrationOption.FeeVND*100, 10)
+		op = r.config.OnePayVND
 	}
 	merchantQueryMap := map[string]string{
 		"vpc_Version":     "2",
@@ -162,13 +212,13 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_Command":     "pay",
 		"vpc_AccessCode":  op.AccessCode,
 		"vpc_Merchant":    op.MerchantID,
-		"vpc_Locale":      locale,                                                             // e.g., "en" or "vn"
-		"vpc_ReturnURL":   op.ReturnURL,                                                       //TODO: add reg.Id
-		"vpc_MerchTxnRef": reg.Id,                                                             // unique transaction ID
+		"vpc_Locale":      locale, // e.g., "en" or "vn"
+		"vpc_ReturnURL":   op.ReturnURL,
+		"vpc_MerchTxnRef": reg.Id,
 		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName, // display info
-		"vpc_Amount":      fmt.Sprintf("%d", amount*100),                                      // in smallest unit
-		"vpc_TicketNo":    clientIP,                                                           // client IP
-		//"vpc_CallbackURL": "TODO"
+		"vpc_Amount":      amount,
+		"vpc_TicketNo":    clientIP,
+		"vpc_CallbackURL": r.config.Server.Host + ":" + r.config.Server.Port + "/onepay/ipn",
 	}
 
 	queryParamSorted := sortParams(merchantQueryMap)
@@ -181,7 +231,6 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		params.Add(key, value)
 	}
 	requestUrl := op.Endpoint + "?" + params.Encode()
-	//sendHttpGetRequest(requestUrl)
 	return requestUrl, nil
 }
 

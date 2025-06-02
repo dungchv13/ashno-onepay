@@ -22,14 +22,20 @@ type Registration struct {
 }
 
 type PaymentStatus string
+
+const (
+	PaymentStatusPending PaymentStatus = "pending"
+	PaymentStatusFail    PaymentStatus = "fail"
+	PaymentStatusDone    PaymentStatus = "done"
+)
+
 type RegistrationCategory string
 
 const (
-	PaymentStatusPending PaymentStatus        = "pending"
-	PaymentStatusFail    PaymentStatus        = "fail"
-	PaymentStatusDone    PaymentStatus        = "done"
-	NationalityVietNam                        = "vn"
-	DoctorCategory       RegistrationCategory = "ENT Doctors"
-	StudentCategory      RegistrationCategory = "Student & Trainees"
-	DinnerCategory       RegistrationCategory = "Chairman & Speaker"
+	DoctorCategory           RegistrationCategory = "ENT Doctors"
+	StudentCategory          RegistrationCategory = "Student & Trainees"
+	DoctorAndDinnerCategory  RegistrationCategory = "ENT Doctors + Gala Dinner"
+	StudentAndDinnerCategory RegistrationCategory = "Student & Trainees + Gala Dinner"
 )
+
+const NationalityVietNam = "vn"

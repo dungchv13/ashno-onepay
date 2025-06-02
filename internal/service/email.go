@@ -13,7 +13,7 @@ import (
 // Generate QR and send email with attachment
 func SendPaymentSuccessEmailWithQR(
 	toEmail, toName, registerID string,
-	hostURL string,
+	hostURL, apikey string,
 ) error {
 	log.Println(toEmail, toName, registerID, hostURL)
 	from := mail.NewEmail("Hidol", "hidol@beanfun.com")
@@ -47,7 +47,7 @@ func SendPaymentSuccessEmailWithQR(
 	message := mail.NewSingleEmail(from, subject, to, "", htmlContent)
 	message.AddAttachment(attachment)
 
-	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+	client := sendgrid.NewSendClient(apikey)
 	_, err = client.Send(message)
 
 	return err
