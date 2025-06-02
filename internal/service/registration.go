@@ -152,7 +152,7 @@ func (r registrationService) setupRegistration(request dto.RegistrationRequest) 
 	}
 	reg.Id = uuid.New().String()
 	OptionFilter := model.RegistrationOptionFilter{}
-	switch request.RegistrationCategory {
+	switch request.RegistrationOption {
 	case string(model.DoctorCategory):
 		OptionFilter.Category = string(model.DoctorCategory)
 		if request.AttendGalaDinner {

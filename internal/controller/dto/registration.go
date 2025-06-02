@@ -13,7 +13,7 @@ type RegistrationRequest struct {
 	PhoneNumber          string `json:"phone_number"`
 	Sponsor              string `json:"sponsor"`
 
-	RegistrationOption string `gorm:"foreignKey:RegistrationOptionID"`
+	RegistrationOption string `json:"registration_option"`
 	AttendGalaDinner   bool   `json:"attend_gala_dinner"`
 }
 
