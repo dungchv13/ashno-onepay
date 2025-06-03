@@ -49,6 +49,8 @@ func SendPaymentSuccessEmailWithQR(
 
 	client := sendgrid.NewSendClient(apikey)
 	_, err = client.Send(message)
-
+	if err != nil {
+		log.Println(err)
+	}
 	return err
 }
