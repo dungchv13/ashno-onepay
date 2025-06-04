@@ -1,0 +1,14 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {},
+    "securityDefinitions": {
+        "SessionKey": {
+            "type": "apiKey",
+            "name": "session-key",
+            "in": "header"
+        }
+    }
+}

@@ -1,0 +1,9 @@
+info:
+  contact: {}
+paths: {}
+securityDefinitions:
+  SessionKey:
+    in: header
+    name: session-key
+    type: apiKey
+swagger: "2.0"
