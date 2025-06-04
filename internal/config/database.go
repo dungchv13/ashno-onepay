@@ -26,8 +26,8 @@ type Database struct {
 }
 
 func (d *Database) GetDSN() string {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s", d.Host, d.Username, d.Password, d.DBName, d.Port, d.TimeZone)
-	fmt.Println(dsn)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", d.Host, d.Username, d.Password, d.DBName, d.Port)
+	log.Println(dsn)
 	return dsn
 }
 

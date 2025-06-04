@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 )
@@ -37,7 +38,7 @@ func sortParams(paramMap map[string]string) []MapSort {
 func generateSecureHash(stringToHash string, merchantHashCode string) string {
 	keyHashHex, err := hex.DecodeString(merchantHashCode)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		panic(err)
 	}
 	secureHash := hmac.New(sha256.New, keyHashHex)
@@ -49,7 +50,7 @@ func generateSecureHash(stringToHash string, merchantHashCode string) string {
 
 func generateStringToHash(paramMapSorted []MapSort) string {
 	stringToHash := ""
-	fmt.Println(paramMapSorted)
+	log.Println(paramMapSorted)
 	for _, items := range paramMapSorted {
 		key := items.Key
 		value := items.Value

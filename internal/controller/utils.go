@@ -4,6 +4,7 @@ import (
 	"ashno-onepay/internal/errors"
 	"ashno-onepay/internal/trace"
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
 func handleError(ctx *gin.Context, err error) {
@@ -12,6 +13,7 @@ func handleError(ctx *gin.Context, err error) {
 	}
 	err = errors.AppendTraceID(err, trace.GetTraceID(ctx))
 	ctx.Error(err)
+	log.Println(err.Error())
 
 	if appError, ok := err.(errors.AppError); ok {
 		ctx.JSON(appError.StatusCode, err)

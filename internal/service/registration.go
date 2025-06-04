@@ -6,7 +6,6 @@ import (
 	errs "ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/repository"
-	"fmt"
 	"github.com/google/uuid"
 	"log"
 	"net/url"
@@ -19,7 +18,6 @@ import (
 type RegistrationService interface {
 	Register(registration dto.RegistrationRequest, clientIP string) (string, string, error)
 	GetRegistration(ID string) (*model.Registration, error)
-	UpdatePaymentStatus(ID, status string) error
 	OnePayVerifySecureHash(u *url.URL) error
 }
 
@@ -52,8 +50,8 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 	stringToHash := generateStringToHash(queryMapSorted)
 	onePaySecureHash := generateSecureHash(stringToHash, op.HashCode)
 	merchantSecureHash := queryParamsMap["vpc_SecureHash"]
-	fmt.Println("OnePay's Hash: ", onePaySecureHash)
-	fmt.Println("Merchant's Hash: ", merchantSecureHash)
+	log.Println("OnePay's Hash: ", onePaySecureHash)
+	log.Println("Merchant's Hash: ", merchantSecureHash)
 	if onePaySecureHash != merchantSecureHash {
 		return errs.ErrForbidden.Reform("Invalid signature")
 	}
@@ -65,9 +63,8 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 		status = string(model.PaymentStatusDone)
 		go func() {
 			err := SendPaymentSuccessEmailWithQR(
-				reg.Email, reg.FirstName, reg.Id,
-				r.config.Server.Host+":"+r.config.Server.Port,
-				r.config.SendGrip.ApiKey,
+				reg.Email, reg.FirstName,
+				reg.Id, r.config,
 			)
 			if err != nil {
 				log.Printf("Send QR Failed for %s", reg.Id)
@@ -79,26 +76,6 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 	}
 
 	return r.registrationRepo.UpdatePaymentStatus(regID, status)
-}
-
-func (r registrationService) UpdatePaymentStatus(ID, status string) error {
-	reg, err := r.GetRegistration(ID)
-	if err != nil {
-		return err
-	}
-	if status == string(model.PaymentStatusDone) {
-		go func() {
-			err := SendPaymentSuccessEmailWithQR(
-				reg.Email, reg.FirstName, reg.Id,
-				r.config.Server.Host+":"+r.config.Server.Port,
-				r.config.SendGrip.ApiKey,
-			)
-			if err != nil {
-				log.Printf("Send QR Failed for %s", reg.Id)
-			}
-		}()
-	}
-	return r.registrationRepo.UpdatePaymentStatus(ID, status)
 }
 
 func (r registrationService) GetRegistration(ID string) (*model.Registration, error) {

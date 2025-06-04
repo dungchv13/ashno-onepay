@@ -72,7 +72,6 @@ func NewServer(
 			route.POST("/register", registrationController.HandleRegister)
 			route.GET("/register/:registerID/registration-info", registrationController.HandlerGetRegistrationInfo)
 			route.GET("/onepay/ipn", registrationController.HandlerOnePayIPN)
-			route.GET("/test", registrationController.Test)
 		}
 	}
 
@@ -113,16 +112,9 @@ func (s *Server) Run() {
 
 func NewHTTPServer(logger log.Logger) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
-
 	engine := gin.New()
-
-	// Ensure that access logging is always the last middleware
 	engine.Use(
-		corsMiddleware,
-		//middleware.Tx(logger),
 		middleware.Cors(),
-		//middleware.Gzip(),
-		//middleware.AccessLogging(logger, "/healths"),
 	)
 
 	return engine

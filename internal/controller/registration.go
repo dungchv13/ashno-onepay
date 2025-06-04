@@ -3,10 +3,8 @@ package controller
 import (
 	"ashno-onepay/internal/controller/dto"
 	"ashno-onepay/internal/errors"
-	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 )
 
@@ -76,19 +74,6 @@ func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 	err := u.registrationSvc.OnePayVerifySecureHash(ctx.Request.URL)
 	if err != nil {
 		handleError(ctx, err)
-		return
-	}
-	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
-}
-
-func (u *RegistrationController) Test(ctx *gin.Context) {
-	txnRef := ctx.Query("vpc_MerchTxnRef") // registrationID
-
-	// Payment Success
-	log.Println("Payment Success for ", txnRef)
-	err := u.registrationSvc.UpdatePaymentStatus(txnRef, string(model.PaymentStatusDone))
-	if err != nil {
-		handleError(ctx, errors.ErrInternal.Wrap(err))
 		return
 	}
 	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
