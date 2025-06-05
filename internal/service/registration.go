@@ -19,12 +19,32 @@ type RegistrationService interface {
 	Register(registration dto.RegistrationRequest, clientIP string) (string, string, error)
 	GetRegistration(ID string) (*model.Registration, error)
 	OnePayVerifySecureHash(u *url.URL) error
+	GetRegistrationOption(filter model.RegistrationOptionFilter) (*model.RegistrationOption, error)
 }
 
 type registrationService struct {
 	registrationRepo        repository.RegistrationRepository
 	registrationOptionsRepo repository.RegistrationOptionRepository
 	config                  *config.Config
+}
+
+func (r registrationService) GetRegistrationOption(filter model.RegistrationOptionFilter) (*model.RegistrationOption, error) {
+	switch filter.Category {
+	case string(model.DoctorCategory):
+		filter.Category = string(model.DoctorCategory)
+		if filter.AttendGalaDinner {
+			filter.Category = string(model.DoctorAndDinnerCategory)
+		}
+		filter.Subtype = DetermineRegistrationPeriod(time.Now())
+	case string(model.StudentCategory):
+		filter.Category = string(model.StudentCategory)
+		if filter.AttendGalaDinner {
+			filter.Category = string(model.StudentAndDinnerCategory)
+		}
+	default:
+		return nil, errs.ErrNotFound.Reform("option not found")
+	}
+	return r.registrationOptionsRepo.Find(filter)
 }
 
 func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {

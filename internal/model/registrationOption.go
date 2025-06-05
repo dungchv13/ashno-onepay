@@ -20,6 +20,7 @@ const (
 )
 
 type RegistrationOptionFilter struct {
-	Category string
-	Subtype  string
+	Category         string
+	Subtype          string
+	AttendGalaDinner bool
 }

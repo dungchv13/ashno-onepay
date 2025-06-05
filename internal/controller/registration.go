@@ -3,6 +3,7 @@ package controller
 import (
 	"ashno-onepay/internal/controller/dto"
 	"ashno-onepay/internal/errors"
+	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -77,6 +78,28 @@ func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 		return
 	}
 	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
+}
+
+// @Summary OnePayIPN
+// @Id onePayIPN
+// @Tags register
+// @version 1.0
+// @Success 200 {object} model.RegistrationOption
+// @Failure 400 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Router /onepay/ipn [get]
+func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
+	registrationOption := ctx.Query("registration_option")
+	attendGalaDinner := ctx.Query("attend_gala_dinner") == "true"
+	option, err := u.registrationSvc.GetRegistrationOption(model.RegistrationOptionFilter{
+		Category:         registrationOption,
+		AttendGalaDinner: attendGalaDinner,
+	})
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, option)
 }
 
 func NewRegistrationController(registrationSvc service.RegistrationService) *RegistrationController {
