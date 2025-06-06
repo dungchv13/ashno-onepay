@@ -210,7 +210,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_AccessCode":  op.AccessCode,
 		"vpc_Merchant":    op.MerchantID,
 		"vpc_Locale":      locale, // e.g., "en" or "vn"
-		"vpc_ReturnURL":   op.ReturnURL,
+		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
 		"vpc_MerchTxnRef": reg.Id,
 		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName, // display info
 		"vpc_Amount":      amount,

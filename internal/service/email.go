@@ -20,13 +20,12 @@ func SendPaymentSuccessEmailWithQR(
 	toEmail, toName, registerID string,
 	config *config.Config,
 ) error {
-	log.Println(toEmail, toName, registerID, config.Server.Host+":"+config.Server.Port)
 	from := mail.NewEmail(config.SendGrip.SenderName, config.SendGrip.SenderEmail)
 	subject := "🎉 Payment Confirmation - QR Ticket Attached"
 	to := mail.NewEmail(toName, toEmail)
 
 	// Generate QR code
-	qrURL := fmt.Sprintf("%s/register/%s/registration-info", config.Server.Host+":"+config.Server.Port, registerID)
+	qrURL := fmt.Sprintf("%s/%s", "https://checkout-ashno2025.vercel.app", registerID)
 	png, err := qrcode.Encode(qrURL, qrcode.Medium, 256)
 	if err != nil {
 		return fmt.Errorf("failed to generate QR code: %w", err)
