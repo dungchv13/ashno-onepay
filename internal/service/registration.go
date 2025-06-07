@@ -215,7 +215,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName, // display info
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
-		"vpc_CallbackURL": r.config.Server.Host + ":" + r.config.Server.Port + "/onepay/ipn",
+		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",
 	}
 
 	queryParamSorted := sortParams(merchantQueryMap)
