@@ -6,6 +6,7 @@ import (
 	errs "ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/repository"
+	"fmt"
 	"github.com/google/uuid"
 	"log"
 	"net/url"
@@ -113,6 +114,10 @@ func (r registrationService) Register(request dto.RegistrationRequest, clientIP 
 			return "", "", errs.ErrInternal.Reform("email registered")
 		}
 		err = r.registrationRepo.Remove(oldReg.Id)
+		if err != nil {
+			fmt.Println("err Remove registration by id: ", err)
+			return "", "", err
+		}
 	}
 
 	// setup registration
