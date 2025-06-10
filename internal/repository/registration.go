@@ -21,7 +21,7 @@ type registrationRepository struct {
 }
 
 func (r registrationRepository) Remove(ID string) error {
-	return r.db.Delete(&model.Registration{}, ID).Error
+	return r.db.Where("id = ?", ID).Delete(&model.Registration{}).Error
 }
 
 func (r registrationRepository) UpdatePaymentStatus(ID, status string) error {
