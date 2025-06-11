@@ -5,6 +5,7 @@ import (
 	"ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -23,6 +24,7 @@ type RegistrationController struct {
 // @Failure 500 {object} errors.AppError
 // @Router /register [post]
 func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
+	fmt.Println("--------------")
 	var req dto.RegistrationRequest
 	if err := ctx.BindJSON(&req); err != nil {
 		handleError(ctx, errors.ErrBadRequest.Wrap(err).Reform("json marshal failed"))

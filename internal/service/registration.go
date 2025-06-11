@@ -63,10 +63,7 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 	if err != nil {
 		return err
 	}
-	op := r.config.OnePayUSD
-	if reg.Nationality == model.NationalityVietNam {
-		op = r.config.OnePayVND
-	}
+	op := r.config.OnePay
 	queryMapSorted := sortParams(queryParamsMap)
 	stringToHash := generateStringToHash(queryMapSorted)
 	onePaySecureHash := generateSecureHash(stringToHash, op.HashCode)
@@ -198,26 +195,24 @@ func DetermineRegistrationPeriod(now time.Time) string {
 }
 
 func (r registrationService) generatePaymentURL(reg *model.Registration, clientIP string) (string, error) {
-	op := r.config.OnePayUSD
+	op := r.config.OnePay
 	locale := "en"
-	currency := "USD"
-	amount := strconv.FormatFloat(reg.RegistrationOption.FeeUSD*100, 'f', 2, 64)
+	currency := "VND"
+
+	amount := strconv.FormatFloat(CalculateVND(reg.RegistrationOption.FeeUSD)*100, 'f', 2, 64)
 	if reg.Nationality == model.NationalityVietNam {
-		locale = "vn"
-		currency = "VND"
 		amount = strconv.FormatInt(reg.RegistrationOption.FeeVND*100, 10)
-		op = r.config.OnePayVND
 	}
 	merchantQueryMap := map[string]string{
 		"vpc_Version":     "2",
-		"vpc_Currency":    currency, // "USD" or "VND"
+		"vpc_Currency":    currency,
 		"vpc_Command":     "pay",
 		"vpc_AccessCode":  op.AccessCode,
 		"vpc_Merchant":    op.MerchantID,
-		"vpc_Locale":      locale, // e.g., "en" or "vn"
+		"vpc_Locale":      locale,
 		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
 		"vpc_MerchTxnRef": reg.Id,
-		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName, // display info
+		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName,
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
 		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",
