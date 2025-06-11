@@ -34,10 +34,22 @@ func setupRate() {
 	if !ok {
 		log.Println("VND rate not found")
 	}
+	now := time.Now().UTC()
+	// Get midnight of the next day
+	midnight := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day()+1, // next day
+		0, 0, 0, 0,
+		now.Location(),
+	)
+
+	duration := midnight.Sub(now)
+
 	rate = rateUSDtoVND{
 		rate: vndRate,
-		at:   time.Now(),
-		ttl:  time.Minute * 30,
+		at:   now,
+		ttl:  duration,
 	}
 }
 
@@ -49,12 +61,12 @@ type rateUSDtoVND struct {
 
 var rate = rateUSDtoVND{
 	rate: 25995.239187,
-	at:   time.Now(),
+	at:   time.Now().Add(-time.Minute * 30),
 	ttl:  time.Minute * 30,
 }
 
 func CalculateVND(usd float64) float64 {
-	if time.Now().After(rate.at.Add(rate.ttl)) {
+	if rate.rate == 0 || time.Now().After(rate.at.Add(rate.ttl)) {
 		setupRate()
 	}
 	return usd * rate.rate
