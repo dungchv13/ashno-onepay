@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+const RateUSDVND = 26000
+
 type RegistrationService interface {
 	Register(registration dto.RegistrationRequest, clientIP string) (string, string, error)
 	GetRegistration(ID string) (*model.Registration, error)
@@ -199,8 +201,10 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 	locale := "en"
 	currency := "VND"
 
-	amount := strconv.FormatFloat(CalculateVND(reg.RegistrationOption.FeeUSD)*100, 'f', 2, 64)
+	usd := int64(reg.RegistrationOption.FeeUSD)
+	amount := strconv.FormatInt(usd*RateUSDVND*100, 10)
 	if reg.Nationality == model.NationalityVietNam {
+		locale = "vn"
 		amount = strconv.FormatInt(reg.RegistrationOption.FeeVND*100, 10)
 	}
 	merchantQueryMap := map[string]string{
@@ -212,7 +216,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_Locale":      locale,
 		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
 		"vpc_MerchTxnRef": reg.Id,
-		"vpc_OrderInfo":   "REG " + reg.FirstName + " " + reg.MiddleName + " " + reg.LastName,
+		"vpc_OrderInfo":   fmt.Sprintf("ORDER %s %s", reg.RegistrationOption.Category, reg.RegistrationOption.Subtype),
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
 		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",

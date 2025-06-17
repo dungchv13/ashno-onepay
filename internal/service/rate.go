@@ -66,8 +66,5 @@ var rate = rateUSDtoVND{
 }
 
 func CalculateVND(usd float64) float64 {
-	if rate.rate == 0 || time.Now().After(rate.at.Add(rate.ttl)) {
-		setupRate()
-	}
 	return usd * rate.rate
 }
