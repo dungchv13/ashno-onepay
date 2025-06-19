@@ -7,7 +7,6 @@ import (
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/repository"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"math/rand"
 	"net/url"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const RateUSDVND = 26000
@@ -83,10 +84,33 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 		log.Println("Payment Success for ", regID)
 		status = string(model.PaymentStatusDone)
 		go func() {
-			err := SendPaymentSuccessEmailWithQR(
-				reg.Email, reg.FirstName,
-				reg.Id, r.config,
+			// err := SendPaymentSuccessEmailWithQR(
+			// 	reg.Email, reg.FirstName,
+			// 	reg.Id, r.config,
+			// )
+			var registrationFee string
+			var locale string
+			if reg.Nationality == model.NationalityVietNam {
+				registrationFee = strconv.FormatInt(reg.RegistrationOption.FeeVND, 10)
+				locale = "vi"
+			} else {
+				registrationFee = strconv.FormatFloat(float64(reg.RegistrationOption.FeeUSD), 'f', -1, 64)
+				locale = "en"
+			}
+
+			fullName := fmt.Sprintf("%s %s %s", reg.FirstName, reg.MiddleName, reg.LastName)
+
+			err := SendRegistrationEmailWithTemplate(
+				reg.Email,       // To email
+				reg.FirstName,   // To name
+				reg.Id,          // Registration ID
+				locale,          // Language ("en" or "vi")
+				fullName,        // Full name
+				reg.PhoneNumber, // Phone number
+				registrationFee, // Registration fee
+				r.config,        // App config
 			)
+
 			if err != nil {
 				log.Printf("Send QR Failed for %s", reg.Id)
 			}

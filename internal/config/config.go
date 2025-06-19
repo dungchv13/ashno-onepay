@@ -12,6 +12,7 @@ type Config struct {
 	Swagger  Swagger  `envPrefix:"SWAGGER_"`
 	OnePay   OnePay   `envPrefix:"ONE_PAY_VND_"`
 	SendGrip SendGrip `envPrefix:"SEND_GRIP_"`
+	Event    Event    `envPrefix:"EVENT_"`
 }
 
 var config Config

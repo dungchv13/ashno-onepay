@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registration Confirmation - ASHNO 2025</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f7fa;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 30px 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .logo-row {
+      margin-bottom: 12px;
+    }
+
+    .logo-row img {
+      height: 50px;
+      margin: 0 10px;
+      vertical-align: middle;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 5px;
+      color: #02184A;
+    }
+
+    .event-title {
+      font-size: 28px;
+      font-weight: 900;
+      color: #02184A;
+    }
+
+    .event-title span {
+      color: #FDB933;
+    }
+
+    .section {
+      margin: 30px 0;
+    }
+
+    .section-title {
+      font-weight: bold;
+      color: #02184A;
+      margin-bottom: 10px;
+    }
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .info-table td {
+      padding: 8px 0;
+    }
+
+    .info-table td.label {
+      font-weight: 600;
+      color: #333;
+      width: 150px;
+    }
+
+    .qr-wrapper {
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .qr-wrapper img {
+      width: 220px;
+      height: 220px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .note {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .highlight {
+      color: #007BFF;
+      font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      .info-table td.label {
+        width: auto;
+        display: block;
+        font-weight: bold;
+      }
+
+      .info-table td.value {
+        display: block;
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-row">
+        <img src="cid:logo1" alt="Logo 1" style="height: 50px; margin: 0 10px; vertical-align: middle;" />
+        <img src="cid:logo2" alt="Logo 2" style="height: 50px; margin: 0 10px; vertical-align: middle;" />
+        <img src="cid:logo3" alt="Logo 3" style="height: 50px; margin: 0 10px; vertical-align: middle;" />
+      </div>
+      <div class="title">REGISTRATION SUCCESSFUL</div>
+      <div class="event-title">ASHNO <span>2025</span></div>
+    </div>
+
+    <!-- Participant Info -->
+    <div class="section">
+      <div class="section-title">Participant Information</div>
+      <table class="info-table">
+        <tr>
+          <td class="label">Full Name:</td>
+          <td class="value">{{.FullName}}</td>
+        </tr>
+        <tr>
+          <td class="label">Phone Number:</td>
+          <td class="value">{{.PhoneNumber}}</td>
+        </tr>
+        <tr>
+          <td class="label">Registration Fee:</td>
+          <td class="value">{{.RegistrationFee}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Event Info -->
+    <div class="section">
+      <div class="section-title">Event Details</div>
+      <table class="info-table">
+        <tr>
+          <td class="label">Event:</td>
+          <td class="value">{{.EventName}}</td>
+        </tr>
+        <tr>
+          <td class="label">Date:</td>
+          <td class="value">{{.EventDate}}</td>
+        </tr>
+        <tr>
+          <td class="label">Venue:</td>
+          <td class="value">{{.EventVenue}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-wrapper">
+      <img src="cid:qrcode" alt="QR Code for Check-in" style="width: 220px; height: 220px; padding: 10px; background: #fff; border-radius: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
+    </div>
+
+    <!-- Note -->
+    <div class="note">
+      Please <span class="highlight">keep this QR code</span> and present it upon check-in at the event.<br />
+      Further details will be provided via email prior to the event date.
+    </div>
+  </div>
+</body>
+</html>
