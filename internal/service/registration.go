@@ -112,6 +112,7 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 			)
 
 			if err != nil {
+				log.Printf("Send QR Failed for %s", err.Error())
 				log.Printf("Send QR Failed for %s", reg.Id)
 			}
 		}()
