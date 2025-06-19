@@ -207,6 +207,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		locale = "vn"
 		amount = strconv.FormatInt(reg.RegistrationOption.FeeVND*100, 10)
 	}
+
 	merchantQueryMap := map[string]string{
 		"vpc_Version":     "2",
 		"vpc_Currency":    currency,
@@ -216,7 +217,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_Locale":      locale,
 		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
 		"vpc_MerchTxnRef": reg.Id,
-		"vpc_OrderInfo":   fmt.Sprintf("ORDER %s %s", reg.RegistrationOption.Category, reg.RegistrationOption.Subtype),
+		"vpc_OrderInfo":   fmt.Sprintf("ORDER%s", reg.Id),
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
 		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",
