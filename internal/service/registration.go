@@ -91,10 +91,10 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 			var registrationFee string
 			var locale string
 			if reg.Nationality == model.NationalityVietNam {
-				registrationFee = strconv.FormatInt(reg.RegistrationOption.FeeVND, 10)
+				registrationFee = strconv.FormatInt(reg.RegistrationOption.FeeVND, 10) + " VND"
 				locale = "vi"
 			} else {
-				registrationFee = strconv.FormatFloat(float64(reg.RegistrationOption.FeeUSD), 'f', -1, 64)
+				registrationFee = strconv.FormatFloat(float64(reg.RegistrationOption.FeeUSD), 'f', -1, 64) + " USD"
 				locale = "en"
 			}
 
