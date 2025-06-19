@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"math/rand"
 	"net/url"
 	"strconv"
 	"strings"
@@ -196,6 +197,18 @@ func DetermineRegistrationPeriod(now time.Time) string {
 	}
 }
 
+const charset = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func RandomString(length int) string {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
 func (r registrationService) generatePaymentURL(reg *model.Registration, clientIP string) (string, error) {
 	op := r.config.OnePay
 	locale := "en"
@@ -217,7 +230,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 		"vpc_Locale":      locale,
 		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
 		"vpc_MerchTxnRef": reg.Id,
-		"vpc_OrderInfo":   fmt.Sprintf("ORDER%s", reg.Id),
+		"vpc_OrderInfo":   fmt.Sprintf("ORDER%s", RandomString(16)),
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
 		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",
