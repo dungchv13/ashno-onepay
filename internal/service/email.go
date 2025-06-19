@@ -154,7 +154,7 @@ func SendRegistrationSuccessEmail(
 	message := mail.NewSingleEmail(from, subject, to, "", htmlContent)
 
 	// Generate and add QR code as inline attachment
-	qrURL := fmt.Sprintf("%s/%s", "https://checkout-ashno2025.vercel.app", registerID)
+	qrURL := fmt.Sprintf("%s/%s", config.OnePay.ReturnURL, registerID)
 	png, err := qrcode.Encode(qrURL, qrcode.Medium, 256)
 	if err != nil {
 		return fmt.Errorf("failed to generate QR code: %w", err)
