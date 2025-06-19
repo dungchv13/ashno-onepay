@@ -16,6 +16,7 @@ RUN apk add --no-cache tzdata
 WORKDIR /app
 # Retrieve the binary from the previous stage
 COPY --from=builder /app/ashno-onepay /app/ashno-onepay
+COPY --from=builder /app/templates ./templates
 # Expose port
 EXPOSE 8000
 # Set the binary as the entrypoint of the container
