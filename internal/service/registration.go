@@ -156,7 +156,6 @@ func (r registrationService) Register(request dto.RegistrationRequest, clientIP 
 		}
 		err = r.registrationRepo.Remove(oldReg.Id)
 		if err != nil {
-			fmt.Println("err Remove registration by id: ", err)
 			return "", "", err
 		}
 	}

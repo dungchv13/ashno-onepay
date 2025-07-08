@@ -5,7 +5,6 @@ import (
 	"ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -31,7 +30,6 @@ func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
 		return
 	}
 	clientIP := ctx.ClientIP()
-	fmt.Println("len(reg.AccompanyPersons)1 : ", len(req.AccompanyPersons))
 	url, userID, err := u.registrationSvc.Register(req, clientIP)
 	if err != nil {
 		handleError(ctx, err)
