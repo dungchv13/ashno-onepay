@@ -49,7 +49,15 @@ func (r registrationService) GetRegistrationOption(filter model.RegistrationOpti
 	default:
 		return nil, errs.ErrNotFound.Reform("option not found")
 	}
-	return r.registrationOptionsRepo.Find(filter)
+	registrationOption, err := r.registrationOptionsRepo.Find(filter)
+	if err != nil {
+		return nil, err
+	}
+	if filter.NumberAccompanyPersons > 0 {
+		registrationOption.FeeUSD = registrationOption.FeeUSD + float64(filter.NumberAccompanyPersons)*model.GalaDinnerOnlyOption.FeeUSD
+		registrationOption.FeeVND = registrationOption.FeeVND + int64(filter.NumberAccompanyPersons)*model.GalaDinnerOnlyOption.FeeVND
+	}
+	return registrationOption, nil
 }
 
 func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
@@ -125,7 +133,15 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 }
 
 func (r registrationService) GetRegistration(ID string) (*model.Registration, error) {
-	return r.registrationRepo.GetRegistration(ID)
+	reg, err := r.registrationRepo.GetRegistration(ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(reg.AccompanyPersons) > 0 {
+		reg.RegistrationOption.FeeUSD = reg.RegistrationOption.FeeUSD + float64(len(reg.AccompanyPersons))*model.GalaDinnerOnlyOption.FeeUSD
+		reg.RegistrationOption.FeeVND = reg.RegistrationOption.FeeVND + int64(len(reg.AccompanyPersons))*model.GalaDinnerOnlyOption.FeeVND
+	}
+	return reg, nil
 }
 
 func (r registrationService) Register(request dto.RegistrationRequest, clientIP string) (string, string, error) {
@@ -176,6 +192,10 @@ func (r registrationService) setupRegistration(request dto.RegistrationRequest) 
 		Email:                request.Email,
 		PhoneNumber:          request.PhoneNumber,
 		Sponsor:              request.Sponsor,
+		AccompanyPersons:     []model.AccompanyPerson{},
+	}
+	for _, p := range request.AccompanyPersons {
+		reg.AccompanyPersons = append(reg.AccompanyPersons, p)
 	}
 	reg.Id = uuid.New().String()
 	OptionFilter := model.RegistrationOptionFilter{}
@@ -238,12 +258,15 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 	op := r.config.OnePay
 	locale := "en"
 	currency := "VND"
+	// adding AccompanyPersons fee
+	optionUSDFee := reg.RegistrationOption.FeeUSD + float64(len(reg.AccompanyPersons))*model.GalaDinnerOnlyOption.FeeUSD
+	optionVNDFee := reg.RegistrationOption.FeeVND + int64(len(reg.AccompanyPersons))*model.GalaDinnerOnlyOption.FeeVND
 
-	usd := int64(reg.RegistrationOption.FeeUSD)
+	usd := int64(optionUSDFee)
 	amount := strconv.FormatInt(usd*RateUSDVND*100, 10)
 	if reg.Nationality == model.NationalityVietNam {
 		locale = "vn"
-		amount = strconv.FormatInt(reg.RegistrationOption.FeeVND*100, 10)
+		amount = strconv.FormatInt(optionVNDFee*100, 10)
 	}
 
 	merchantQueryMap := map[string]string{

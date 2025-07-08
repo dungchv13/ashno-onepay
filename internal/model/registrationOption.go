@@ -11,6 +11,12 @@ type RegistrationOption struct {
 	Active bool `gorm:"default:true" json:"active"`
 }
 
+var GalaDinnerOnlyOption = RegistrationOption{
+	Category: "GalaDinnerOnly",
+	FeeUSD:   100,
+	FeeVND:   1000000,
+}
+
 type RegistrationPeriod string
 
 const (
@@ -20,7 +26,8 @@ const (
 )
 
 type RegistrationOptionFilter struct {
-	Category         string
-	Subtype          string
-	AttendGalaDinner bool
+	Category               string
+	Subtype                string
+	AttendGalaDinner       bool
+	NumberAccompanyPersons int
 }

@@ -1,5 +1,7 @@
 package dto
 
+import "ashno-onepay/internal/model"
+
 type RegistrationRequest struct {
 	RegistrationCategory string `json:"registration_category" binding:"required"`
 	Nationality          string `json:"nationality"`
@@ -13,8 +15,9 @@ type RegistrationRequest struct {
 	PhoneNumber          string `json:"phone_number"`
 	Sponsor              string `json:"sponsor"`
 
-	RegistrationOption string `json:"registration_option" binding:"required"`
-	AttendGalaDinner   bool   `json:"attend_gala_dinner"`
+	RegistrationOption string                  `json:"registration_option" binding:"required"`
+	AttendGalaDinner   bool                    `json:"attend_gala_dinner"`
+	AccompanyPersons   []model.AccompanyPerson `json:"accompany_persons"`
 }
 
 type RegistrationResponse struct {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type RegistrationController struct {
@@ -24,14 +25,13 @@ type RegistrationController struct {
 // @Failure 500 {object} errors.AppError
 // @Router /register [post]
 func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
-	fmt.Println("--------------")
 	var req dto.RegistrationRequest
 	if err := ctx.BindJSON(&req); err != nil {
 		handleError(ctx, errors.ErrBadRequest.Wrap(err).Reform("json marshal failed"))
 		return
 	}
 	clientIP := ctx.ClientIP()
-
+	fmt.Println("len(reg.AccompanyPersons)1 : ", len(req.AccompanyPersons))
 	url, userID, err := u.registrationSvc.Register(req, clientIP)
 	if err != nil {
 		handleError(ctx, err)
@@ -93,9 +93,11 @@ func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
 	registrationOption := ctx.Query("registration_option")
 	attendGalaDinner := ctx.Query("attend_gala_dinner") == "true"
+	numberAccompanyPersons, _ := strconv.Atoi(ctx.Query("numbers_accompany_persons"))
 	option, err := u.registrationSvc.GetRegistrationOption(model.RegistrationOptionFilter{
-		Category:         registrationOption,
-		AttendGalaDinner: attendGalaDinner,
+		Category:               registrationOption,
+		AttendGalaDinner:       attendGalaDinner,
+		NumberAccompanyPersons: numberAccompanyPersons,
 	})
 	if err != nil {
 		handleError(ctx, err)
