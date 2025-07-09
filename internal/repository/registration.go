@@ -4,8 +4,9 @@ import (
 	errs "ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"errors"
-	"gorm.io/gorm"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 type RegistrationRepository interface {
@@ -14,6 +15,7 @@ type RegistrationRepository interface {
 	GetRegistration(ID string) (*model.Registration, error)
 	UpdatePaymentStatus(ID, status string) error
 	Remove(ID string) error
+	UpdateAccompanyPersonsByID(id string, accompanyPersons model.AccompanyPersonList) error
 }
 
 type registrationRepository struct {
@@ -29,6 +31,12 @@ func (r registrationRepository) UpdatePaymentStatus(ID, status string) error {
 		Where("id = ?", ID).
 		Update("payment_status", status).Error
 	return err
+}
+
+func (r registrationRepository) UpdateAccompanyPersonsByID(id string, accompanyPersons model.AccompanyPersonList) error {
+	return r.db.Model(&model.Registration{}).
+		Where("id = ?", id).
+		Update("accompany_persons", accompanyPersons).Error
 }
 
 func (r registrationRepository) GetByEmail(email string) (*model.Registration, error) {

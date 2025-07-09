@@ -24,3 +24,8 @@ type RegistrationResponse struct {
 	PaymentURL string `json:"payment_url"`
 	UserID     string `json:"user_id"`
 }
+
+type AccompanyPersonRegistrationRequest struct {
+	Email            string                  `json:"email" binding:"required"`
+	AccompanyPersons []model.AccompanyPerson `json:"accompany_persons" binding:"required,dive"`
+}

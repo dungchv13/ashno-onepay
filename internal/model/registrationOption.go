@@ -15,6 +15,7 @@ var GalaDinnerOnlyOption = RegistrationOption{
 	Category: "GalaDinnerOnly",
 	FeeUSD:   100,
 	FeeVND:   1000000,
+	Active:   true,
 }
 
 type RegistrationPeriod string

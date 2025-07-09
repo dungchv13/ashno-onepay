@@ -9,7 +9,6 @@ import (
 	"ashno-onepay/internal/trace"
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"os"
@@ -17,6 +16,8 @@ import (
 	"runtime/debug"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -73,6 +74,7 @@ func NewServer(
 			route.GET("/register/:registerID/registration-info", registrationController.HandlerGetRegistrationInfo)
 			route.GET("/onepay/ipn", registrationController.HandlerOnePayIPN)
 			route.GET("/register/option", registrationController.HandlerGetOption)
+			route.POST("/register/accompany-persons", registrationController.HandleRegisterAccompanyPersons)
 		}
 	}
 

@@ -5,16 +5,17 @@ import (
 	"ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RegistrationController struct {
 	registrationSvc service.RegistrationService
 }
 
-// @Summary Register
+// @Summary Register a New User for the Event
 // @Id register
 // @Tags register
 // @version 1.0
@@ -42,7 +43,7 @@ func (u *RegistrationController) HandleRegister(ctx *gin.Context) {
 	})
 }
 
-// @Summary Get Registration Info
+// @Summary Get Registration Information by ID
 // @Id getRegistrationInfo
 // @Tags register
 // @version 1.0
@@ -63,7 +64,7 @@ func (u *RegistrationController) HandlerGetRegistrationInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, reg)
 }
 
-// @Summary OnePayIPN
+// @Summary OnePay Payment Notification (IPN) Handler
 // @Id onePayIPN
 // @Tags register
 // @version 1.0
@@ -80,14 +81,14 @@ func (u *RegistrationController) HandlerOnePayIPN(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "responsecode=1&desc=confirm-success")
 }
 
-// @Summary OnePayIPN
-// @Id onePayIPN
+// @Summary Get Registration Option Details
+// @Id getRegistrationOption
 // @Tags register
 // @version 1.0
 // @Success 200 {object} model.RegistrationOption
 // @Failure 400 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
-// @Router /onepay/ipn [get]
+// @Router /register/option [get]
 func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
 	registrationOption := ctx.Query("registration_option")
 	attendGalaDinner := ctx.Query("attend_gala_dinner") == "true"
@@ -102,6 +103,32 @@ func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, option)
+}
+
+// @Summary Register Accompanying Persons for an Existing Registration
+// @Id registerAccompanyPersons
+// @Tags register
+// @version 1.0
+// @Param body body dto.AccompanyPersonRegistrationRequest true "body"
+// @Success 200 {object} dto.AccompanyPersonRegistrationResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Router /register/accompany-persons [post]
+func (u *RegistrationController) HandleRegisterAccompanyPersons(ctx *gin.Context) {
+	var req dto.AccompanyPersonRegistrationRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		handleError(ctx, errors.ErrBadRequest.Wrap(err).Reform("json marshal failed"))
+		return
+	}
+	clientIP := ctx.ClientIP()
+	paymentURL, err := u.registrationSvc.RegisterForAccompanyPersons(req.Email, req.AccompanyPersons, clientIP)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, dto.RegistrationResponse{
+		PaymentURL: paymentURL,
+	})
 }
 
 func NewRegistrationController(registrationSvc service.RegistrationService) *RegistrationController {

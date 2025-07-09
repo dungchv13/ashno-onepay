@@ -29,10 +29,11 @@ type Registration struct {
 }
 
 type AccompanyPerson struct {
-	FirstName   string `json:"first_name"`
-	MiddleName  string `json:"middle_name"`
-	LastName    string `json:"last_name"`
-	DateOfBirth string `json:"date_of_birth"`
+	FirstName     string `json:"first_name"`
+	MiddleName    string `json:"middle_name"`
+	LastName      string `json:"last_name"`
+	DateOfBirth   string `json:"date_of_birth"`
+	PaymentStatus string `json:"payment_status"`
 }
 
 type AccompanyPersonList []AccompanyPerson
@@ -67,3 +68,9 @@ const (
 )
 
 const NationalityVietNam = "vn"
+
+const (
+	AccompanyPersonsPaymentStatusPending = "pending"
+	AccompanyPersonsPaymentStatusFail    = "fail"
+	AccompanyPersonsPaymentStatusDone    = "done"
+)
