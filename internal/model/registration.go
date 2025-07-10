@@ -36,6 +36,15 @@ type AccompanyPerson struct {
 	PaymentStatus string `json:"payment_status"`
 }
 
+type AccompanyPersonDB struct {
+	TransactionID  string `gorm:"type:varchar(100)" json:"transaction_id"`
+	RegistrationID string `gorm:"type:varchar(100)" json:"registration_id"`
+	FirstName      string `gorm:"type:varchar(100)" json:"first_name"`
+	MiddleName     string `gorm:"type:varchar(100)" json:"middle_name"`
+	LastName       string `gorm:"type:varchar(100)" json:"last_name"`
+	DateOfBirth    string `gorm:"type:varchar(100)" json:"date_of_birth"`
+}
+
 type AccompanyPersonList []AccompanyPerson
 
 func (a *AccompanyPersonList) Scan(value interface{}) error {

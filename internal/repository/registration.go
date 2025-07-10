@@ -16,6 +16,8 @@ type RegistrationRepository interface {
 	UpdatePaymentStatus(ID, status string) error
 	Remove(ID string) error
 	UpdateAccompanyPersonsByID(id string, accompanyPersons model.AccompanyPersonList) error
+	SaveAccompanyPersons(persons []model.AccompanyPersonDB) error
+	GetAccompanyPersonsByTransactionAndRegistration(transactionID string) ([]model.AccompanyPersonDB, error)
 }
 
 type registrationRepository struct {
@@ -37,6 +39,13 @@ func (r registrationRepository) UpdateAccompanyPersonsByID(id string, accompanyP
 	return r.db.Model(&model.Registration{}).
 		Where("id = ?", id).
 		Update("accompany_persons", accompanyPersons).Error
+}
+
+func (r registrationRepository) SaveAccompanyPersons(persons []model.AccompanyPersonDB) error {
+	if len(persons) == 0 {
+		return nil
+	}
+	return r.db.Create(&persons).Error
 }
 
 func (r registrationRepository) GetByEmail(email string) (*model.Registration, error) {
@@ -73,6 +82,12 @@ func (r registrationRepository) Create(registration model.Registration) (*model.
 		return nil, errs.ErrInternal.Wrap(result.Error)
 	}
 	return &registration, nil
+}
+
+func (r registrationRepository) GetAccompanyPersonsByTransactionAndRegistration(transactionID string) ([]model.AccompanyPersonDB, error) {
+	var persons []model.AccompanyPersonDB
+	err := r.db.Where("transaction_id = ?", transactionID).Find(&persons).Error
+	return persons, err
 }
 
 var registrationRepositoryInstance *registrationRepository

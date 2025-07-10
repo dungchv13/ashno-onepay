@@ -89,6 +89,7 @@ func InitDatabase() {
 	err = db.AutoMigrate(
 		model.Registration{},
 		model.RegistrationOption{},
+		model.AccompanyPersonDB{},
 	)
 	if err != nil {
 		panic(errs.Wrap(err, "Failed to migrate database"))

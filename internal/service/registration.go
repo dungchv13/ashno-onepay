@@ -78,22 +78,14 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 	}
 
 	// Extract required fields
-	regID := queryParamsMap["vpc_MerchTxnRef"]
+	txnRef := queryParamsMap["vpc_MerchTxnRef"]
 	orderInfo := queryParamsMap["vpc_OrderInfo"]
 	txnCode := queryParamsMap["vpc_TxnResponseCode"]
 	merchantSecureHash := queryParamsMap["vpc_SecureHash"]
 	message := queryParamsMap["vpc_Message"]
 
-	if regID == "" {
+	if txnRef == "" {
 		return errs.ErrBadRequest
-	}
-
-	reg, err := r.registrationRepo.GetRegistration(regID)
-	if err != nil {
-		return err
-	}
-	if reg == nil {
-		return errs.ErrNotFound.Reform("registration not found")
 	}
 
 	// Verify secure hash
@@ -111,6 +103,14 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 	switch {
 	case strings.HasPrefix(orderInfo, "ORDER"):
 		// Main registration payment
+		regID := txnRef
+		reg, err := r.registrationRepo.GetRegistration(regID)
+		if err != nil {
+			return err
+		}
+		if reg == nil {
+			return errs.ErrNotFound.Reform("registration not found")
+		}
 		var status string
 		if txnCode == "0" {
 			log.Println("Payment Success for ", regID)
@@ -150,30 +150,41 @@ func (r registrationService) OnePayVerifySecureHash(u *url.URL) error {
 		}
 		return r.registrationRepo.UpdatePaymentStatus(regID, status)
 
-	case strings.HasPrefix(orderInfo, "ACCOMPANY"):
+	case strings.HasPrefix(orderInfo, "ACCOM"):
 		// Accompany person payment
+		transactionID := strings.TrimPrefix(orderInfo, "ACCOM")
+		accompanyPersons, err := r.registrationRepo.GetAccompanyPersonsByTransactionAndRegistration(transactionID)
+		if err != nil {
+			return err
+		}
+		if len(accompanyPersons) == 0 {
+			return err
+		}
+		regID := accompanyPersons[0].RegistrationID
+		reg, err := r.registrationRepo.GetRegistration(regID)
+		if err != nil {
+			return err
+		}
+		if reg == nil {
+			return errs.ErrNotFound.Reform("registration not found")
+		}
+		for _, person := range accompanyPersons {
+			reg.AccompanyPersons = append(reg.AccompanyPersons, model.AccompanyPerson{
+				FirstName:     person.FirstName,
+				MiddleName:    person.MiddleName,
+				LastName:      person.LastName,
+				DateOfBirth:   person.DateOfBirth,
+				PaymentStatus: model.AccompanyPersonsPaymentStatusDone,
+			})
+		}
 		if txnCode == "0" {
 			log.Println("Payment Success for accompany person ", regID)
-			for i := range reg.AccompanyPersons {
-				if reg.AccompanyPersons[i].PaymentStatus == model.AccompanyPersonsPaymentStatusPending {
-					reg.AccompanyPersons[i].PaymentStatus = model.AccompanyPersonsPaymentStatusDone
-				}
-			}
 			err = r.registrationRepo.UpdateAccompanyPersonsByID(reg.Id, reg.AccompanyPersons)
 			if err != nil {
 				return err
 			}
 		} else {
 			log.Printf("Accompany person payment failed for %s: %s", regID, message)
-			for i := range reg.AccompanyPersons {
-				if reg.AccompanyPersons[i].PaymentStatus == model.AccompanyPersonsPaymentStatusPending {
-					reg.AccompanyPersons[i].PaymentStatus = model.AccompanyPersonsPaymentStatusFail
-				}
-			}
-			err = r.registrationRepo.UpdateAccompanyPersonsByID(reg.Id, reg.AccompanyPersons)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -284,19 +295,25 @@ func (r registrationService) RegisterForAccompanyPersons(email string, accompany
 	if reg == nil || reg.PaymentStatus != string(model.PaymentStatusDone) {
 		return "", errs.ErrNotFound.Reform("registration with email %s not found", email)
 	}
+	transactionID := RandomString(16)
+	var accompanyPersonsDB []model.AccompanyPersonDB
 	for i := range accompanyPersons {
-		accompanyPersons[i].PaymentStatus = model.AccompanyPersonsPaymentStatusPending
+		accompanyPersonsDB = append(accompanyPersonsDB, model.AccompanyPersonDB{
+			TransactionID:  transactionID,
+			RegistrationID: reg.Id,
+			FirstName:      accompanyPersons[i].FirstName,
+			MiddleName:     accompanyPersons[i].MiddleName,
+			LastName:       accompanyPersons[i].LastName,
+			DateOfBirth:    accompanyPersons[i].DateOfBirth,
+		})
 	}
-	if len(reg.AccompanyPersons) > 0 {
-		accompanyPersons = append(reg.AccompanyPersons, accompanyPersons...)
-	}
-	err = r.registrationRepo.UpdateAccompanyPersonsByID(reg.Id, accompanyPersons)
+	err = r.registrationRepo.SaveAccompanyPersons(accompanyPersonsDB)
 	if err != nil {
 		return "", err
 	}
 	// Update the in-memory reg object for payment calculation
 	reg.AccompanyPersons = accompanyPersons
-	paymentURL, err := r.generatePaymentURLForAccompanyPersons(reg, accompanyPersons, clientIP)
+	paymentURL, err := r.generatePaymentURLForAccompanyPersons(reg, accompanyPersons, clientIP, transactionID)
 	if err != nil {
 		return "", err
 	}
@@ -375,7 +392,7 @@ func (r registrationService) generatePaymentURL(reg *model.Registration, clientI
 	return requestUrl, nil
 }
 
-func (r registrationService) generatePaymentURLForAccompanyPersons(reg *model.Registration, accompanyPersons model.AccompanyPersonList, clientIP string) (string, error) {
+func (r registrationService) generatePaymentURLForAccompanyPersons(reg *model.Registration, accompanyPersons model.AccompanyPersonList, clientIP, transactionID string) (string, error) {
 	op := r.config.OnePay
 	locale := "en"
 	currency := "VND"
@@ -399,8 +416,8 @@ func (r registrationService) generatePaymentURLForAccompanyPersons(reg *model.Re
 		"vpc_Merchant":    op.MerchantID,
 		"vpc_Locale":      locale,
 		"vpc_ReturnURL":   op.ReturnURL + "/" + reg.Id,
-		"vpc_MerchTxnRef": reg.Id,
-		"vpc_OrderInfo":   fmt.Sprintf("ACCOMPANY%s", RandomString(16)),
+		"vpc_MerchTxnRef": transactionID,
+		"vpc_OrderInfo":   fmt.Sprintf("ACCOM%s", transactionID),
 		"vpc_Amount":      amount,
 		"vpc_TicketNo":    clientIP,
 		"vpc_CallbackURL": r.config.Server.Host + "/onepay/ipn",
