@@ -93,10 +93,12 @@ func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
 	registrationOption := ctx.Query("registration_option")
 	attendGalaDinner := ctx.Query("attend_gala_dinner") == "true"
 	numberAccompanyPersons, _ := strconv.Atoi(ctx.Query("numbers_accompany_persons"))
+	email := ctx.Query("email")
 	option, err := u.registrationSvc.GetRegistrationOption(model.RegistrationOptionFilter{
 		Category:               registrationOption,
 		AttendGalaDinner:       attendGalaDinner,
 		NumberAccompanyPersons: numberAccompanyPersons,
+		Email:                  email,
 	})
 	if err != nil {
 		handleError(ctx, err)

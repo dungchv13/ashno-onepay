@@ -36,8 +36,11 @@ type registrationService struct {
 
 func (r registrationService) GetRegistrationOption(filter model.RegistrationOptionFilter) (*model.RegistrationOption, error) {
 	var registrationOption *model.RegistrationOption
-	var err error
-	if filter.Category != "" {
+	reg, err := r.registrationRepo.GetByEmail(filter.Email)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil || reg.PaymentStatus != string(model.PaymentStatusDone) {
 		switch filter.Category {
 		case string(model.DoctorCategory):
 			filter.Category = string(model.DoctorCategory)

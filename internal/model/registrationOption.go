@@ -31,4 +31,5 @@ type RegistrationOptionFilter struct {
 	Subtype                string
 	AttendGalaDinner       bool
 	NumberAccompanyPersons int
+	Email                  string
 }
