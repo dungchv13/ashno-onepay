@@ -75,6 +75,7 @@ func NewServer(
 			route.GET("/onepay/ipn", registrationController.HandlerOnePayIPN)
 			route.GET("/register/option", registrationController.HandlerGetOption)
 			route.POST("/register/accompany-persons", registrationController.HandleRegisterAccompanyPersons)
+			route.GET("/register/file", registrationController.HandleGetFile)
 		}
 	}
 

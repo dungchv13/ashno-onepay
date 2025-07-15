@@ -1,18 +1,25 @@
 package controller
 
 import (
+	"ashno-onepay/internal/config"
 	"ashno-onepay/internal/controller/dto"
 	"ashno-onepay/internal/errors"
 	"ashno-onepay/internal/model"
 	"ashno-onepay/internal/service"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
+
+	"github.com/xuri/excelize/v2"
 
 	"github.com/gin-gonic/gin"
 )
 
 type RegistrationController struct {
 	registrationSvc service.RegistrationService
+	config          *config.Config
 }
 
 // @Summary Register a New User for the Event
@@ -112,7 +119,7 @@ func (u *RegistrationController) HandlerGetOption(ctx *gin.Context) {
 // @Tags register
 // @version 1.0
 // @Param body body dto.AccompanyPersonRegistrationRequest true "body"
-// @Success 200 {object} dto.AccompanyPersonRegistrationResponse
+// @Success 200 {object} dto.RegistrationResponse
 // @Failure 400 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
 // @Router /register/accompany-persons [post]
@@ -133,8 +140,100 @@ func (u *RegistrationController) HandleRegisterAccompanyPersons(ctx *gin.Context
 	})
 }
 
-func NewRegistrationController(registrationSvc service.RegistrationService) *RegistrationController {
+// @Summary Export Registrations as XLSX
+// @Id exportRegistrationsXLSX
+// @Tags register
+// @version 1.0
+// @Param start_time query string false "Start time (YYYY-MM-DD)"
+// @Param end_time query string false "End time (YYYY-MM-DD)"
+// @Success 200 {file} xlsx "XLSX file"
+// @Failure 500 {object} errors.AppError
+// @Router /register/file [get]
+func (u *RegistrationController) HandleGetFile(ctx *gin.Context) {
+	startTimeStr := ctx.Query("start_time")
+	endTimeStr := ctx.Query("end_time")
+
+	var startTime, endTime time.Time
+	var err error
+	if startTimeStr != "" {
+		startTime, err = time.Parse(time.DateOnly, startTimeStr)
+		if err != nil {
+			handleError(ctx, errors.ErrBadRequest.Reform("invalid start_time format, must be YYYY-MM-DD"))
+			return
+		}
+	}
+	if endTimeStr != "" {
+		endTime, err = time.Parse(time.DateOnly, endTimeStr)
+		if err != nil {
+			handleError(ctx, errors.ErrBadRequest.Reform("invalid end_time format, must be YYYY-MM-DD"))
+			return
+		}
+	}
+
+	regs, err := u.registrationSvc.GetRegistrations(startTime, endTime)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+
+	f := excelize.NewFile()
+	sheet := "Registrations"
+	f.SetSheetName(f.GetSheetName(0), sheet)
+	headers := []string{"VerifyLink", "Category", "Nationality", "DoctorateDegree", "FirstName", "MiddleName", "LastName", "FullName", "DateOfBirth", "Institution", "Email", "PhoneNumber", "Sponsor", "PaymentStatus", "AccompanyPersons"}
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheet, cell, h)
+	}
+	for rowIdx, reg := range regs {
+		var accompanyList []string
+		for _, p := range reg.AccompanyPersons {
+			accompanyList = append(accompanyList,
+				p.FirstName+" "+p.MiddleName+" "+p.LastName+
+					" (DOB: "+p.DateOfBirth+")",
+			)
+		}
+		accompanyStr := strings.Join(accompanyList, "\n")
+
+		verifyLinkCell, _ := excelize.CoordinatesToCellName(1, rowIdx+2)
+		verifyURL := fmt.Sprintf("%s/%s", u.config.OnePay.ReturnURL, reg.Id)
+		f.SetCellValue(sheet, verifyLinkCell, "VerifyLink")
+		f.SetCellHyperLink(sheet, verifyLinkCell, verifyURL, "External")
+
+		row := []interface{}{
+			// skip the first column, already set
+			reg.RegistrationCategory,
+			reg.Nationality,
+			reg.DoctorateDegree,
+			reg.FirstName,
+			reg.MiddleName,
+			reg.LastName,
+			reg.FirstName + " " + reg.MiddleName + " " + reg.LastName,
+			reg.DateOfBirth,
+			reg.Institution,
+			reg.Email,
+			reg.PhoneNumber,
+			reg.Sponsor,
+			reg.PaymentStatus,
+			accompanyStr,
+		}
+		for colIdx, val := range row {
+			cell, _ := excelize.CoordinatesToCellName(colIdx+2, rowIdx+2)
+			f.SetCellValue(sheet, cell, val)
+		}
+	}
+	ctx.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	ctx.Header("Content-Disposition", "attachment; filename=registrations.xlsx")
+	ctx.Header("Content-Transfer-Encoding", "binary")
+	ctx.Header("Expires", "0")
+	if err := f.Write(ctx.Writer); err != nil {
+		handleError(ctx, errors.ErrInternal.Wrap(err).Reform("failed to write xlsx file"))
+		return
+	}
+}
+
+func NewRegistrationController(registrationSvc service.RegistrationService, config *config.Config) *RegistrationController {
 	return &RegistrationController{
 		registrationSvc: registrationSvc,
+		config:          config,
 	}
 }

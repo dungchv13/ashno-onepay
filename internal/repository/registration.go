@@ -5,6 +5,7 @@ import (
 	"ashno-onepay/internal/model"
 	"errors"
 	"sync"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,7 @@ type RegistrationRepository interface {
 	UpdateAccompanyPersonsByID(id string, accompanyPersons model.AccompanyPersonList) error
 	SaveAccompanyPersons(persons []model.AccompanyPersonDB) error
 	GetAccompanyPersonsByTransactionAndRegistration(transactionID string) ([]model.AccompanyPersonDB, error)
+	GetRegistrations(startTime, endTime time.Time) ([]*model.Registration, error)
 }
 
 type registrationRepository struct {
@@ -88,6 +90,26 @@ func (r registrationRepository) GetAccompanyPersonsByTransactionAndRegistration(
 	var persons []model.AccompanyPersonDB
 	err := r.db.Where("transaction_id = ?", transactionID).Find(&persons).Error
 	return persons, err
+}
+
+func (r registrationRepository) GetRegistrations(startTime, endTime time.Time) ([]*model.Registration, error) {
+	var registrations []*model.Registration
+	query := r.db
+	query = query.Where("payment_status = ?", model.PaymentStatusDone)
+
+	if !startTime.IsZero() && !endTime.IsZero() {
+		query = query.Where("created_at >= ? AND created_at <= ?", startTime, endTime)
+	} else if !startTime.IsZero() {
+		query = query.Where("created_at >= ?", startTime)
+	} else if !endTime.IsZero() {
+		query = query.Where("created_at <= ?", endTime)
+	}
+
+	err := query.Find(&registrations).Error
+	if err != nil {
+		return nil, err
+	}
+	return registrations, nil
 }
 
 var registrationRepositoryInstance *registrationRepository

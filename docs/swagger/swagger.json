@@ -3,7 +3,442 @@
     "info": {
         "contact": {}
     },
-    "paths": {},
+    "paths": {
+        "/onepay/ipn": {
+            "get": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "OnePay Payment Notification (IPN) Handler",
+                "operationId": "onePayIPN",
+                "responses": {
+                    "200": {
+                        "description": "responsecode=1\u0026desc=confirm-success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "Register a New User for the Event",
+                "operationId": "register",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegistrationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register/accompany-persons": {
+            "post": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "Register Accompanying Persons for an Existing Registration",
+                "operationId": "registerAccompanyPersons",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AccompanyPersonRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegistrationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register/file": {
+            "get": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "Export Registrations as XLSX",
+                "operationId": "exportRegistrationsXLSX",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start time (YYYY-MM-DD)",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End time (YYYY-MM-DD)",
+                        "name": "end_time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "XLSX file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register/option": {
+            "get": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "Get Registration Option Details",
+                "operationId": "getRegistrationOption",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RegistrationOption"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register/{registerID}/registration-info": {
+            "get": {
+                "tags": [
+                    "register"
+                ],
+                "summary": "Get Registration Information by ID",
+                "operationId": "getRegistrationInfo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "registerID",
+                        "name": "registerID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Registration"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.AccompanyPersonRegistrationRequest": {
+            "type": "object",
+            "required": [
+                "accompany_persons",
+                "email"
+            ],
+            "properties": {
+                "accompany_persons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AccompanyPerson"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RegistrationRequest": {
+            "type": "object",
+            "required": [
+                "doctorate_degree",
+                "email",
+                "registration_category",
+                "registration_option"
+            ],
+            "properties": {
+                "accompany_persons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AccompanyPerson"
+                    }
+                },
+                "attend_gala_dinner": {
+                    "type": "boolean"
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "doctorate_degree": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "institution": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "nationality": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "registration_category": {
+                    "type": "string"
+                },
+                "registration_option": {
+                    "type": "string"
+                },
+                "sponsor": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RegistrationResponse": {
+            "type": "object",
+            "properties": {
+                "payment_url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "errors.AppError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AccompanyPerson": {
+            "type": "object",
+            "properties": {
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Registration": {
+            "type": "object",
+            "required": [
+                "doctorate_degree",
+                "email",
+                "registration_category"
+            ],
+            "properties": {
+                "accompany_persons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AccompanyPerson"
+                    }
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "doctorate_degree": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "institution": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "middle_name": {
+                    "type": "string"
+                },
+                "nationality": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "registrationOption": {
+                    "$ref": "#/definitions/model.RegistrationOption"
+                },
+                "registration_category": {
+                    "type": "string"
+                },
+                "registration_option_id": {
+                    "type": "string"
+                },
+                "sponsor": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RegistrationOption": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "category": {
+                    "description": "e.g., \"Doctor\"",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "fee_usd": {
+                    "description": "e.g., 500 = $500",
+                    "type": "number"
+                },
+                "fee_vnd": {
+                    "description": "e.g., 12000000 = 12,000,000 VND",
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "subtype": {
+                    "description": "e.g., \"Early-bird\"",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        }
+    },
     "securityDefinitions": {
         "SessionKey": {
             "type": "apiKey",

@@ -26,6 +26,7 @@ type RegistrationService interface {
 	OnePayVerifySecureHash(u *url.URL) error
 	GetRegistrationOption(filter model.RegistrationOptionFilter) (*model.RegistrationOption, error)
 	RegisterForAccompanyPersons(email string, accompanyPersons model.AccompanyPersonList, clientIP string) (string, error)
+	GetRegistrations(startTime, endTime time.Time) ([]*model.Registration, error)
 }
 
 type registrationService struct {
@@ -437,6 +438,10 @@ func (r registrationService) generatePaymentURLForAccompanyPersons(reg *model.Re
 	}
 	requestUrl := op.Endpoint + "?" + params.Encode()
 	return requestUrl, nil
+}
+
+func (r registrationService) GetRegistrations(startTime, endTime time.Time) ([]*model.Registration, error) {
+	return r.registrationRepo.GetRegistrations(startTime, endTime)
 }
 
 var registrationServiceInstance RegistrationService

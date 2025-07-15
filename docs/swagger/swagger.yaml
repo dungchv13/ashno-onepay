@@ -1,6 +1,293 @@
+definitions:
+  dto.AccompanyPersonRegistrationRequest:
+    properties:
+      accompany_persons:
+        items:
+          $ref: '#/definitions/model.AccompanyPerson'
+        type: array
+      email:
+        type: string
+    required:
+    - accompany_persons
+    - email
+    type: object
+  dto.RegistrationRequest:
+    properties:
+      accompany_persons:
+        items:
+          $ref: '#/definitions/model.AccompanyPerson'
+        type: array
+      attend_gala_dinner:
+        type: boolean
+      date_of_birth:
+        type: string
+      doctorate_degree:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      institution:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      nationality:
+        type: string
+      phone_number:
+        type: string
+      registration_category:
+        type: string
+      registration_option:
+        type: string
+      sponsor:
+        type: string
+    required:
+    - doctorate_degree
+    - email
+    - registration_category
+    - registration_option
+    type: object
+  dto.RegistrationResponse:
+    properties:
+      payment_url:
+        type: string
+      user_id:
+        type: string
+    type: object
+  errors.AppError:
+    properties:
+      code:
+        type: integer
+      error:
+        type: boolean
+      message:
+        type: string
+    type: object
+  model.AccompanyPerson:
+    properties:
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      payment_status:
+        type: string
+    type: object
+  model.Registration:
+    properties:
+      accompany_persons:
+        items:
+          $ref: '#/definitions/model.AccompanyPerson'
+        type: array
+      createdAt:
+        type: string
+      date_of_birth:
+        type: string
+      doctorate_degree:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      institution:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      nationality:
+        type: string
+      payment_status:
+        type: string
+      phone_number:
+        type: string
+      registration_category:
+        type: string
+      registration_option_id:
+        type: string
+      registrationOption:
+        $ref: '#/definitions/model.RegistrationOption'
+      sponsor:
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - doctorate_degree
+    - email
+    - registration_category
+    type: object
+  model.RegistrationOption:
+    properties:
+      active:
+        type: boolean
+      category:
+        description: e.g., "Doctor"
+        type: string
+      createdAt:
+        type: string
+      fee_usd:
+        description: e.g., 500 = $500
+        type: number
+      fee_vnd:
+        description: e.g., 12000000 = 12,000,000 VND
+        type: integer
+      id:
+        type: string
+      subtype:
+        description: e.g., "Early-bird"
+        type: string
+      updatedAt:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+paths:
+  /onepay/ipn:
+    get:
+      operationId: onePayIPN
+      responses:
+        "200":
+          description: responsecode=1&desc=confirm-success
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: OnePay Payment Notification (IPN) Handler
+      tags:
+      - register
+  /register:
+    post:
+      operationId: register
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegistrationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RegistrationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Register a New User for the Event
+      tags:
+      - register
+  /register/{registerID}/registration-info:
+    get:
+      operationId: getRegistrationInfo
+      parameters:
+      - description: registerID
+        in: path
+        name: registerID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Registration'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Get Registration Information by ID
+      tags:
+      - register
+  /register/accompany-persons:
+    post:
+      operationId: registerAccompanyPersons
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AccompanyPersonRegistrationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RegistrationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Register Accompanying Persons for an Existing Registration
+      tags:
+      - register
+  /register/file:
+    get:
+      operationId: exportRegistrationsXLSX
+      parameters:
+      - description: Start time (YYYY-MM-DD)
+        in: query
+        name: start_time
+        type: string
+      - description: End time (YYYY-MM-DD)
+        in: query
+        name: end_time
+        type: string
+      responses:
+        "200":
+          description: XLSX file
+          schema:
+            type: file
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Export Registrations as XLSX
+      tags:
+      - register
+  /register/option:
+    get:
+      operationId: getRegistrationOption
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.RegistrationOption'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Get Registration Option Details
+      tags:
+      - register
 securityDefinitions:
   SessionKey:
     in: header

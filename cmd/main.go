@@ -38,7 +38,7 @@ func main() {
 	//service
 	registrationSvc := service.GetRegistrationServiceInstance(registrationRepo, registrationOptionsRepo, &cfg)
 	//controller
-	registrationCtrl := controller.NewRegistrationController(registrationSvc)
+	registrationCtrl := controller.NewRegistrationController(registrationSvc, &cfg)
 
 	sessionMiddleware := middleware.NewSessionMiddleware(jwt.NewValidator(cfg.Server.JwtKey))
 
