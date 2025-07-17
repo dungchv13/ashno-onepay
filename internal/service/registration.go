@@ -41,7 +41,7 @@ func (r registrationService) GetRegistrationOption(filter model.RegistrationOpti
 	if err != nil {
 		return nil, err
 	}
-	if reg == nil || reg.PaymentStatus != string(model.PaymentStatusDone) {
+	if (reg == nil || reg.PaymentStatus != string(model.PaymentStatusDone)) && filter.Category != "" {
 		switch filter.Category {
 		case string(model.DoctorCategory):
 			filter.Category = string(model.DoctorCategory)
