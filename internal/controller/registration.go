@@ -179,7 +179,10 @@ func (u *RegistrationController) HandleGetFile(ctx *gin.Context) {
 	f := excelize.NewFile()
 	sheet := "Registrations"
 	f.SetSheetName(f.GetSheetName(0), sheet)
-	headers := []string{"VerifyLink", "Category", "Nationality", "DoctorateDegree", "FirstName", "MiddleName", "LastName", "FullName", "DateOfBirth", "Institution", "Email", "PhoneNumber", "Sponsor", "PaymentStatus", "AccompanyPersons"}
+	headers := []string{"VerifyLink", "Category", "Nationality", "DoctorateDegree", "FirstName",
+		"MiddleName", "LastName", "FullName", "DateOfBirth", "Institution", 
+		"Email", "PhoneNumber", "Sponsor", "PaymentStatus", "RegistrationTime", 
+		"AttendGalaDinner", "AccompanyPersons", "PaymentAmount" }
 	for i, h := range headers {
 		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
 		f.SetCellValue(sheet, cell, h)
@@ -198,11 +201,21 @@ func (u *RegistrationController) HandleGetFile(ctx *gin.Context) {
 		verifyURL := fmt.Sprintf("%s/%s", u.config.OnePay.ReturnURL, reg.Id)
 		f.SetCellValue(sheet, verifyLinkCell, "VerifyLink")
 		f.SetCellHyperLink(sheet, verifyLinkCell, verifyURL, "External")
-
+		attendGalaDinner := "No"
+		if model.RegistrationCategory(reg.RegistrationOption.Category) == model.DoctorAndDinnerCategory || 
+		model.RegistrationCategory(reg.RegistrationOption.Category) == model.StudentAndDinnerCategory {
+			attendGalaDinner = "Yes"
+		}
+		var paymentAmount string
+		if reg.Nationality == model.NationalityVietNam {
+			paymentAmount = fmt.Sprintf("%d VND", reg.RegistrationOption.FeeVND + int64(len(reg.AccompanyPersons)) * model.GalaDinnerOnlyOption.FeeVND)
+		} else {
+			paymentAmount = fmt.Sprintf("%d USD", int(reg.RegistrationOption.FeeUSD + float64(len(reg.AccompanyPersons)) * model.GalaDinnerOnlyOption.FeeUSD))
+		}
 		row := []interface{}{
 			// skip the first column, already set
 			reg.RegistrationCategory,
-			reg.Nationality,
+			model.GetCountryName(reg.Nationality),
 			reg.DoctorateDegree,
 			reg.FirstName,
 			reg.MiddleName,
@@ -214,7 +227,10 @@ func (u *RegistrationController) HandleGetFile(ctx *gin.Context) {
 			reg.PhoneNumber,
 			reg.Sponsor,
 			reg.PaymentStatus,
+			reg.CreatedAt.Format(time.DateTime),
+			attendGalaDinner,
 			accompanyStr,
+			paymentAmount,
 		}
 		for colIdx, val := range row {
 			cell, _ := excelize.CoordinatesToCellName(colIdx+2, rowIdx+2)

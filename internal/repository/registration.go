@@ -94,7 +94,7 @@ func (r registrationRepository) GetAccompanyPersonsByTransactionAndRegistration(
 
 func (r registrationRepository) GetRegistrations(startTime, endTime time.Time) ([]*model.Registration, error) {
 	var registrations []*model.Registration
-	query := r.db
+	query := r.db.Preload("RegistrationOption")
 	query = query.Where("payment_status = ?", model.PaymentStatusDone)
 
 	if !startTime.IsZero() && !endTime.IsZero() {
